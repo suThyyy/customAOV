@@ -289,6 +289,7 @@ function renderPlayers() {
         chip.title = p.active === false ? 'Bấm để đánh dấu "đang chơi"' : 'Bấm để tắt (không chơi hôm nay)';
         playerList.appendChild(chip);
     });
+    if (typeof updateDrawStatus === 'function') updateDrawStatus();
 }
 
 // ===== 9. Render tier score =====
@@ -545,6 +546,7 @@ function startElimination(players) {
 
     let remaining = [...players];
     let round = 0;
+    let committed = false;   // đã ghi state khi loại đủ chưa
     let eliminated = [];   // người bị loại
     let picked = [];       // người được xác nhận chơi
 
@@ -557,11 +559,32 @@ function startElimination(players) {
     }
     renderElim();
 
+    // GHI NGƯỜI CHƠI CUỐI vào state.players (người bị loại => active=false)
+    function commitSelection() {
+        const keepIds = new Set([...picked, ...remaining].map(p => p.id));
+        state.players.forEach((p) => {
+            p.active = keepIds.has(p.id);
+            delete p.out;
+            delete p.picked;
+        });
+        saveState();
+        renderPlayers();
+    }
+    // Ghi NGAY khi hiệu ứng loại đủ người (không phụ thuộc nút cuối)
+    function commitIfDone() {
+        if (remaining.length + picked.length <= 10 && !committed) {
+            committed = true;
+            stopSpinMusic();
+            commitSelection();
+        }
+    }
+
     function eliminateNext() {
         // dừng khi số người sẽ chơi (còn lại + được xác nhận) đủ 10
         if (remaining.length + picked.length <= 10) {
             stopSpinMusic();
             playTada();
+            commitIfDone();
             $('elimDoneBtn').hidden = false;
             return;
         }
@@ -600,18 +623,19 @@ function startElimination(players) {
     }
 
     $('elimDoneBtn').onclick = () => {
-        // LƯU VÀO state.players: ai không được chọn (loại/troll-CHƠI chưa chốt) thì... 
-        // Người chơi cuối = picked (✅ CHƠI) + remaining (chưa bị loại) — phần còn lại = bị loại
-        const keepIds = new Set([...picked, ...remaining].map(p => p.id));
-        state.players.forEach((p) => {
-            p.active = keepIds.has(p.id);   // người bị loại => active=false (nghỉ hôm nay)
-            delete p.out; delete p.picked;  // dọn dấu troll
-        });
-        saveState();
-        renderPlayers();
+        commitIfDone();  // đảm bảo đã ghi state
         elimModal.classList.add('hidden');
         doDraw([...picked, ...remaining]);
     };
+
+    // Nếu người dùng đóng modal thoát early — vẫn ghi state nếu đã loại đủ
+    $('elimModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            commitIfDone();
+            elimModal.classList.add('hidden');
+            if (committed) $('elimDoneBtn').onclick = null;
+        }
+    });
 
     eliminateNext();
 }
@@ -1089,6 +1113,40 @@ async function loadDefaultMembers() {
     } catch (e) { /* bỏ qua — mở local file thường bị chặn */ }
 }
 
+// Cập nhật dòng trạng thái trước nút bốc thăm:多少人 đang chơi + đủ/chưa
+function updateDrawStatus() {
+    const active = state.players.filter(p => p.active !== false);
+    const el = $('drawStatus');
+    if (active.length === 10) {
+        el.textContent = `✅ Đã đủ 10 người chơi — bấm BỐC THĂM!`;
+        el.style.color = '#4ade80';
+    } else if (active.length < 10) {
+        el.textContent = `Đang có ${active.length} người chơi — thiếu ${10 - active.length} (bấm chip để bật người)`;
+        el.style.color = '#fbbf24';
+    } else {
+        el.textContent = `Đang có ${active.length} người chơi — dư ${active.length - 10} (bấm "🎯 Chọn 10 người chơi" ở trên)`;
+        el.style.color = '#f87171';
+    }
+    // nút bốc thăm chỉ sáng khi đủ
+    drawBtn.disabled = active.length !== 10;
+}
+
+// Nút nạp lại data gốc từ repo
+$('reloadDataBtn').addEventListener('click', () => {
+    if (!confirm('Tải lại data gốc từ repo (members.json)? Dữ liệu hiện tại trên trình duyệt này sẽ bị thay!')) return;
+    localStorage.removeItem('lq_state');
+    localStorage.removeItem('lq_lastResult');
+    fetch('data/members.json')
+        .then((r) => r.json())
+        .then((members) => {
+            state.players = Array.isArray(members) ? members : [];
+            state.history = [];
+            saveState();
+            location.reload();
+        })
+        .catch(() => location.reload());
+});
+
 function init() {
     loadState();
     $('tagline').textContent = TAGLINES[rand(TAGLINES.length)];
@@ -1099,6 +1157,10 @@ function init() {
     renderSettings();
     renderHistory();
     loadDefaultMembers();
+
+    updateDrawStatus();
+    // nếu data localStorage khác data gốc repo (đã từng chỉnh sửa local) -> hiện nút nạp lại
+    if (localStorage.getItem('lq_state')) $('reloadDataBtn').hidden = false;
 
     // khôi phục kết quả gần nhất (session)
     try {

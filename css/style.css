@@ -585,6 +585,14 @@ body {
 }
 
 /* ===== Draw buttons ===== */
+.draw-status {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    min-height: 20px;
+}
+
 .draw-btn {
     display: block;
     width: 100%;

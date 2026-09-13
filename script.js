@@ -528,7 +528,7 @@ function draw() {
         return;
     }
     if (active.length > 10) {
-        startElimination(active);
+        alert(`Còn ${active.length} người đang chơi (dư ${active.length - 10}) — bấm nút "🎯 Chọn 10 người chơi" trên khung thêm chiến hữu để loại bớt trước đã! 😅`);
         return;
     }
     doDraw(active);
@@ -630,6 +630,9 @@ function doDraw(players) {
     }
 
     currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning };
+
+    // lưu kết quả vào localStorage (session — F5 không mất)
+    try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
 
     if (s.revealMode === 'secretBox') renderSecretBox();
     else renderSlotMachine();
@@ -1000,8 +1003,15 @@ function resetPickedMarks() {
 }
 
 // Draw
-drawBtn.addEventListener('click', draw);
-redrawBtn.addEventListener('click', draw);
+drawBtn.addEventListener('click', () => {
+    // đã có kết quả hiện trên màn thì xác nhận trước khi bốc lại (tránh bấm nhầm mất kết quả)
+    if (currentResult && !confirm('Kết quả hiện tại sẽ bị thay bằng lượt bốc mới, tiếp tục? 🎲')) return;
+    draw();
+});
+redrawBtn.addEventListener('click', () => {
+    if (currentResult && !confirm('Bốc lại toàn bộ? Kết quả hiện tại sẽ thay đổi 🔄')) return;
+    draw();
+});
 
 // Result actions (event delegation)
 resultArea.addEventListener('click', (e) => {
@@ -1080,5 +1090,16 @@ function init() {
     renderSettings();
     renderHistory();
     loadDefaultMembers();
+
+    // khôi phục kết quả gần nhất (session)
+    try {
+        const last = localStorage.getItem('lq_lastResult');
+        if (last) {
+            currentResult = JSON.parse(last);
+            const r = currentResult;
+            if (state.settings.revealMode === 'secretBox') renderSecretBox();
+            else renderSlotMachine();
+        }
+    } catch (e) {}
 }
 init();

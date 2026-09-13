@@ -690,12 +690,12 @@ body {
 .flip-card {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid var(--card-border);
     border-radius: 14px;
-    padding: 12px;
-    min-height: 100px;
+    padding: 14px;
+    min-height: 112px;
     cursor: pointer;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -715,17 +715,23 @@ body {
 }
 
 .f-avatar {
-    width: 64px;
-    height: 64px;
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 44px;
     background: rgba(255, 255, 255, 0.12);
     overflow: hidden;
-    border: 2px solid var(--accent);
-    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.flip-card:hover .f-avatar {
+    transform: scale(1.06);
+    box-shadow: 0 0 26px rgba(168, 85, 247, 0.8), 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .f-avatar img {
@@ -856,18 +862,24 @@ body {
 }
 
 .slot-frame .sf-avatar {
-    width: 128px;
-    height: 128px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
-    margin: 0 auto 6px;
+    margin: 0 auto 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 62px;
+    font-size: 72px;
     background: rgba(255, 255, 255, 0.12);
     overflow: hidden;
-    border: 3px solid var(--accent);
-    box-shadow: 0 0 24px rgba(168, 85, 247, 0.6);
+    border: 4px solid var(--accent);
+    box-shadow: 0 0 34px rgba(168, 85, 247, 0.7), 0 6px 18px rgba(0, 0, 0, 0.5);
+    animation: spotGlow 2.5s ease infinite;
+}
+
+@keyframes spotGlow {
+    0%, 100% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 6px 18px rgba(0, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 46px rgba(168, 85, 247, 0.95), 0 6px 18px rgba(0, 0, 0, 0.5); }
 }
 
 .slot-frame .sf-avatar img {

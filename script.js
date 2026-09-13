@@ -169,7 +169,7 @@ let state = {
     players: [],
     tierScore: { 1: 8, 2: 4, 3: 2, 4: 1, 5: 0.5 },
     championPool: JSON.parse(JSON.stringify(DEFAULT_ROLE_CHAMPIONS)),
-    settings: { teamMode: 'tier', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true },
+    settings: { teamMode: 'tier', roleMode: 'random', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true },
     history: []
 };
 
@@ -198,7 +198,7 @@ function loadState() {
         if (raw) {
             const d = JSON.parse(raw);
             state = Object.assign(state, d);
-            state.settings = Object.assign({ teamMode: 'tier', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true }, d.settings);
+            state.settings = Object.assign({ teamMode: 'tier', roleMode: 'random', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true }, d.settings);
             state.championPool = Object.assign(JSON.parse(JSON.stringify(DEFAULT_ROLE_CHAMPIONS)), d.championPool);
             // Nếu bể lưu cũ bị rỗng thì dùng lại mặc định theo vị trí
             if (Object.values(state.championPool).every((p) => p.length === 0)) {
@@ -334,6 +334,7 @@ function toggleHero(name) {
 // ===== 11. Settings =====
 function renderSettings() {
     document.querySelectorAll('input[name="teamMode"]').forEach(r => r.checked = r.value === state.settings.teamMode);
+    document.querySelectorAll('input[name="roleMode"]').forEach(r => r.checked = r.value === (state.settings.roleMode || 'random'));
     document.querySelectorAll('input[name="championMode"]').forEach(r => r.checked = r.value === state.settings.championMode);
     document.querySelectorAll('input[name="balanceLevel"]').forEach(r => r.checked = r.value === state.settings.balanceLevel);
     document.querySelectorAll('input[name="revealMode"]').forEach(r => r.checked = r.value === state.settings.revealMode);
@@ -647,8 +648,13 @@ function doDraw(players) {
     if (s.teamMode === 'random') split = splitRandom(players);
     else split = splitTierBalanced(players);
 
-    let teamA = assignPositions(split.teamA);
-    let teamB = assignPositions(split.teamB);
+    // tôn trọng chế độ gán vị trí: 'skip' = ai cũng "Tự chọn lane"
+    const assignPos = (team) => state.settings.roleMode === 'skip'
+        ? team.map((p) => ({ ...p, role: 'flex' }))
+        : assignPositions(team);
+
+    let teamA = assignPos(split.teamA);
+    let teamB = assignPos(split.teamB);
     const [a2, b2] = assignChampions(teamA, teamB);
     teamA = a2; teamB = b2;
 
@@ -1000,6 +1006,7 @@ $('tierScoreToggle').addEventListener('click', () => {
 
 // Settings
 document.querySelectorAll('input[name="teamMode"]').forEach(r => r.addEventListener('change', () => { state.settings.teamMode = r.value; saveState(); renderSettings(); }));
+document.querySelectorAll('input[name="roleMode"]').forEach(r => r.addEventListener('change', () => { state.settings.roleMode = r.value; saveState(); }));
 document.querySelectorAll('input[name="championMode"]').forEach(r => r.addEventListener('change', () => { state.settings.championMode = r.value; saveState(); }));
 document.querySelectorAll('input[name="balanceLevel"]').forEach(r => r.addEventListener('change', () => { state.settings.balanceLevel = r.value; saveState(); }));
 document.querySelectorAll('input[name="revealMode"]').forEach(r => r.addEventListener('change', () => { state.settings.revealMode = r.value; saveState(); }));

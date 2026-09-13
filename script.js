@@ -697,22 +697,23 @@ function renderSecretBox() {
 function teamColumnSecretBox(team, name, percent, side) {
     const cards = team.map((p) => `
         <div class="flip-card" data-side="${side}" data-idx="${team.indexOf(p)}">
-            <div class="flip-inner">
-                <div class="flip-face flip-front">
-                    <span class="f-avatar">${avatarHtml(p.avatar)}</span>
-                    <span class="f-info">
-                        <span class="f-name">${p.name}</span>
-                        <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
-                    </span>
-                    <span class="f-question">❓</span>
+            <div class="card-left">
+                <span class="f-avatar">${avatarHtml(p.avatar)}</span>
+            </div>
+            <div class="flip-zone">
+                <div class="flip-inner">
+                    <div class="flip-face flip-front">
+                        <span class="f-question">?</span>
+                    </div>
+                    <div class="flip-face flip-back">
+                        ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
+                    </div>
                 </div>
-                <div class="flip-face flip-back">
-                    <span class="f-avatar">${avatarHtml(p.avatar)}</span>
-                    <span class="f-name">${p.name}</span>
-                    <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
-                    ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : ''}
-                    <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : '🖐 Tự chọn'}</span>
-                </div>
+            </div>
+            <div class="card-info">
+                <span class="f-name">${p.name}</span>
+                <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
+                <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : 'Tự chọn tướng'}</span>
             </div>
         </div>
     `).join('');

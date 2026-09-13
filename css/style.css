@@ -686,18 +686,67 @@ body {
     gap: 10px;
 }
 
+/* ===== Thẻ lật: avatar trái (KHÔNG lật) + ô flip phải ===== */
 .flip-card {
-    perspective: 1000px;
-    height: 150px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px;
+    min-height: 100px;
     cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flip-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+}
+
+.flip-card.flipped {
+    border-color: rgba(74, 222, 128, 0.5);
+}
+
+/* Avatar thành viên — TRÁI, nằm NGOÀI vùng lật, không bao giờ xoay */
+.card-left {
+    flex-shrink: 0;
+}
+
+.f-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+.f-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Vùng lật 3D — CHỈ ô tướng (bên phải) */
+.flip-zone {
+    perspective: 900px;
+    flex-shrink: 0;
 }
 
 .flip-inner {
     position: relative;
-    width: 100%;
-    height: 100%;
+    width: 72px;
+    height: 72px;
     transform-style: preserve-3d;
-    transition: transform 0.6s;
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .flip-card.flipped .flip-inner {
@@ -708,101 +757,81 @@ body {
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--card-border);
-    padding: 10px;
-    overflow: hidden;
-}
-
-.flip-back {
-    transform: rotateY(180deg);
-}
-
-/* Mặt trước: kiểu thẻ bài úp — avatar trái, tên/vị trí giữa, ❓ phải */
-.flip-card .flip-front {
-    flex-direction: row;
-    gap: 10px;
-}
-
-.flip-card .flip-front .f-avatar {
-    width: 64px;
-    height: 64px;
-    font-size: 32px;
-    flex-shrink: 0;
-}
-
-.flip-card .flip-front .f-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-    text-align: left;
-}
-
-.flip-card .flip-front .f-question {
-    flex-shrink: 0;
-    align-self: center;
-}
-
-.flip-face .f-avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
+    -webkit-backface-visibility: hidden;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    background: rgba(255, 255, 255, 0.12);
     overflow: hidden;
+}
+
+.flip-face.flip-front {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(244, 114, 182, 0.15));
     border: 2px solid var(--accent);
 }
 
-.flip-face .f-avatar img {
+.f-question {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 14px rgba(168, 85, 247, 0.7);
+    animation: questionPulse 2s ease infinite;
+}
+
+@keyframes questionPulse {
+    0%, 100% { transform: scale(1); opacity: 0.9; }
+    50% { transform: scale(1.12); opacity: 1; }
+}
+
+.flip-face.flip-back {
+    transform: rotateY(180deg);
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(74, 222, 128, 0.6);
+}
+
+.f-champ-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
-.flip-face .f-name {
-    font-size: 13px;
+.f-champ-free {
+    font-size: 30px;
+}
+
+/* Thông tin thành viên — hàng dưới, cố định, không lật */
+.card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.f-name {
+    font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
 }
 
-.flip-face .f-role {
+.f-role {
     font-size: 11px;
     color: var(--muted);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.flip-face .f-question {
-    font-size: 40px;
-    font-weight: 900;
-    color: var(--accent);
-    text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-}
-
-.flip-face .f-champ-img {
-    width: 52px;
-    height: 52px;
-    border-radius: 10px;
-    object-fit: cover;
-}
-
-.flip-face .f-champ-name {
+.f-champ-name {
     font-size: 12px;
     font-weight: 700;
     color: var(--accent-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Slot machine */

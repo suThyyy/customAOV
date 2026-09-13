@@ -700,14 +700,16 @@ function teamColumnSecretBox(team, name, percent, side) {
             <div class="flip-inner">
                 <div class="flip-face flip-front">
                     <span class="f-avatar">${avatarHtml(p.avatar)}</span>
-                    <span class="f-name">${p.name}</span>
-                    <span class="f-role">${p.role === 'flex' ? 'Linh hoạt/Sub' : ROLE_LABELS[p.role]}</span>
+                    <span class="f-info">
+                        <span class="f-name">${p.name}</span>
+                        <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
+                    </span>
                     <span class="f-question">❓</span>
                 </div>
                 <div class="flip-face flip-back">
                     <span class="f-avatar">${avatarHtml(p.avatar)}</span>
                     <span class="f-name">${p.name}</span>
-                    <span class="f-role">${p.role === 'flex' ? 'Linh hoạt/Sub' : ROLE_LABELS[p.role]}</span>
+                    <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
                     ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : ''}
                     <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : '🖐 Tự chọn'}</span>
                 </div>
@@ -761,7 +763,7 @@ function renderSlotMachine() {
     const showFrame = (p) => {
         $('sfAvatar').innerHTML = avatarHtml(p.avatar);
         $('sfName').textContent = p.name;
-        $('sfRole').textContent = (p.role === 'flex' ? 'Linh hoạt/Sub' : ROLE_LABELS[p.role]);
+        $('sfRole').textContent = (p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]);
     };
 
     const appendRow = (p) => {
@@ -858,10 +860,10 @@ function buildCopyText() {
     lines.push(`🎲 KẾT QUẢ BỐC TEAM`);
     lines.push('');
     lines.push(`🔵 ${r.nameA}${r.balance.teamA !== undefined ? ` (${r.balance.teamA}%)` : ''}`);
-    r.teamA.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Linh hoạt' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
+    r.teamA.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
     lines.push('');
     lines.push(`🔴 ${r.nameB}${r.balance.teamB !== undefined ? ` (${r.balance.teamB}%)` : ''}`);
-    r.teamB.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Linh hoạt' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
+    r.teamB.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
     return lines.join('\n');
 }
 
@@ -908,7 +910,7 @@ function showHistoryModal(i) {
     [['🔵 ' + h.teamAName, h.teamA], ['🔴 ' + h.teamBName, h.teamB]].forEach(([t, team]) => {
         html += `<p style="font-weight:700;margin:8px 0 4px">${t}${h.balancePercent && h.balancePercent.teamA !== undefined ? '' : ''}</p>`;
         team.forEach((p, idx) => {
-            html += `<div style="font-size:13px;padding:3px 0">${idx + 1}. ${p.name} — ${p.role === 'flex' ? 'Linh hoạt' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</div>`;
+            html += `<div style="font-size:13px;padding:3px 0">${idx + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</div>`;
         });
     });
     $('modalBody').innerHTML = html;
@@ -1171,15 +1173,7 @@ function init() {
     // nếu data localStorage khác data gốc repo (đã từng chỉnh sửa local) -> hiện nút nạp lại
     if (localStorage.getItem('lq_state')) $('reloadDataBtn').hidden = false;
 
-    // khôi phục kết quả gần nhất (session)
-    try {
-        const last = localStorage.getItem('lq_lastResult');
-        if (last) {
-            currentResult = JSON.parse(last);
-            const r = currentResult;
-            if (state.settings.revealMode === 'secretBox') renderSecretBox();
-            else renderSlotMachine();
-        }
-    } catch (e) {}
+    // KHÔNG tự render kết quả cũ khi load trang (kết quả cũ xem qua mục "🕘 Lịch sử → Xem lại")
+    try { sessionStorage.setItem('lq_lastResult', localStorage.getItem('lq_lastResult') || ''); } catch (e) {}
 }
 init();

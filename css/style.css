@@ -688,7 +688,7 @@ body {
 
 .flip-card {
     perspective: 1000px;
-    height: 130px;
+    height: 150px;
     cursor: pointer;
 }
 
@@ -716,11 +716,39 @@ body {
     gap: 4px;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--card-border);
-    padding: 8px;
+    padding: 10px;
+    overflow: hidden;
 }
 
 .flip-back {
     transform: rotateY(180deg);
+}
+
+/* Mặt trước: kiểu thẻ bài úp — avatar trái, tên/vị trí giữa, ❓ phải */
+.flip-card .flip-front {
+    flex-direction: row;
+    gap: 10px;
+}
+
+.flip-card .flip-front .f-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.flip-card .flip-front .f-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.flip-card .flip-front .f-question {
+    flex-shrink: 0;
+    align-self: center;
 }
 
 .flip-face .f-avatar {
@@ -745,16 +773,23 @@ body {
 .flip-face .f-name {
     font-size: 13px;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .flip-face .f-role {
     font-size: 11px;
     color: var(--muted);
+    white-space: nowrap;
 }
 
 .flip-face .f-question {
-    font-size: 32px;
+    font-size: 40px;
     font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
 }
 
 .flip-face .f-champ-img {

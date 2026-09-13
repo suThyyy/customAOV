@@ -600,6 +600,15 @@ function startElimination(players) {
     }
 
     $('elimDoneBtn').onclick = () => {
+        // LƯU VÀO state.players: ai không được chọn (loại/troll-CHƠI chưa chốt) thì... 
+        // Người chơi cuối = picked (✅ CHƠI) + remaining (chưa bị loại) — phần còn lại = bị loại
+        const keepIds = new Set([...picked, ...remaining].map(p => p.id));
+        state.players.forEach((p) => {
+            p.active = keepIds.has(p.id);   // người bị loại => active=false (nghỉ hôm nay)
+            delete p.out; delete p.picked;  // dọn dấu troll
+        });
+        saveState();
+        renderPlayers();
         elimModal.classList.add('hidden');
         doDraw([...picked, ...remaining]);
     };

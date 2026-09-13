@@ -428,6 +428,7 @@ function assignChampions(teamA, teamB) {
     function assignTeam(team) {
         const usedInTeam = new Set();
         return team.map((p) => {
+            if (mode === 'skip') return { ...p, champion: null, championWarn: false };  // không bốc tướng
             let pool;
             if (p.role === 'flex' || mode === 'full') pool = fullPool;
             else pool = (state.championPool[p.role] && state.championPool[p.role].length) ? state.championPool[p.role] : fullPool;
@@ -667,7 +668,8 @@ function doDraw(players) {
     // lưu kết quả vào localStorage (session — F5 không mất)
     try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
 
-    if (s.revealMode === 'secretBox') renderSecretBox();
+    // chế độ "không bốc tướng" → không cần slot quay, luôn dùng Hộp Bí Ẩn (cho gọn)
+    if (s.revealMode === 'secretBox' || s.championMode === 'skip') renderSecretBox();
     else renderSlotMachine();
 }
 
@@ -701,7 +703,7 @@ function teamColumnSecretBox(team, name, percent, side) {
                     <span class="f-name">${p.name}</span>
                     <span class="f-role">${p.role === 'flex' ? 'Linh hoạt/Sub' : ROLE_LABELS[p.role]}</span>
                     ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : ''}
-                    <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : '❓'}</span>
+                    <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : '🖐 Tự chọn'}</span>
                 </div>
             </div>
         </div>

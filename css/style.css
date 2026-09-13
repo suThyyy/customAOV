@@ -834,6 +834,14 @@ body {
     text-overflow: ellipsis;
 }
 
+.champ-hidden-text {
+    display: none;
+}
+
+.champ-reveal {
+    animation: pop 0.35s ease;
+}
+
 /* Slot machine */
 .slot-area {
     text-align: center;

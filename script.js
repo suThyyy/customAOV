@@ -713,8 +713,9 @@ function teamColumnSecretBox(team, name, percent, side) {
             <div class="card-info">
                 <span class="f-name">${p.name}</span>
                 <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
-                <span class="f-champ-name">${p.champion ? p.champion + (p.championWarn ? ' ⚠️' : '') : 'Tự chọn tướng'}</span>
+                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
             </div>
+            ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
         </div>
     `).join('');
     return `<div class="team-col">
@@ -1063,10 +1064,12 @@ resultArea.addEventListener('click', (e) => {
     if (e.target.id === 'copyBtn') {
         navigator.clipboard.writeText(buildCopyText()).then(() => alert('📋 Đã copy!')).catch(() => alert('Không copy được'));
     } else if (e.target.id === 'revealAllBtn') {
-        document.querySelectorAll('.flip-card').forEach(c => { if (!c.classList.contains('flipped')) { c.classList.add('flipped'); playFlip(); } });
+        document.querySelectorAll('.flip-card').forEach(c => { if (!c.classList.contains('flipped')) { c.classList.add('flipped'); revealChampName(c); playFlip(); } });
     } else if (e.target.closest('.flip-card')) {
         const card = e.target.closest('.flip-card');
+        if (card.classList.contains('flipped')) return;   // đã lật rồi — không lật lại
         card.classList.add('flipped');
+        revealChampName(card);
         playFlip();
         // khi lật hết thì confetti + lưu history
         const total = document.querySelectorAll('.flip-card').length;
@@ -1074,6 +1077,13 @@ resultArea.addEventListener('click', (e) => {
         if (flipped === total) { fireConfetti(); playTada(); saveHistory(); }
     }
 });
+
+// Lật thẻ: hiện luôn tên tướng (thay dấu ??? trong dòng info)
+function revealChampName(card) {
+    const hidden = card.querySelector('.champ-hidden-text');
+    const revealEl = card.querySelector('.champ-reveal');
+    if (hidden && revealEl) revealEl.innerHTML = hidden.innerHTML;
+}
 
 // History
 historyList.addEventListener('click', (e) => {

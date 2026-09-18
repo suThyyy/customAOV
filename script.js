@@ -358,15 +358,18 @@ function renderViewerSession(data) {
 
     // Tạo hash để detect teams thay đổi (bốc lại)
     const newHash = JSON.stringify(data.teams.teamA.map(p => p.name)) + JSON.stringify(data.teams.teamB.map(p => p.name));
+    const newRevealMode = data.settings?.revealMode || 'secretBox';
     const teamsChanged = newHash !== viewerTeamsHash;
+    const modeChanged = newRevealMode !== viewerRevealMode && viewerRevealMode !== '';
 
-    if (teamsChanged) {
-        // Teams thay đổi → reset state và render lại
+    if (teamsChanged || modeChanged) {
+        // Teams hoặc mode thay đổi → reset state và render lại
         viewerRendered = false;
         viewerFlippedCards.clear();
         viewerSpinnersDone.clear();
         viewerCurrentOrder = [];
         viewerTeamsHash = newHash;
+        viewerRevealMode = newRevealMode;
     }
 
     // Nếu đã render rồi và teams không đổi → chỉ update reveal
@@ -394,8 +397,9 @@ function renderViewerSession(data) {
         return;
     }
 
-    // Lần đầu render HOẶC teams thay đổi
+    // Lần đầu render HOẶC teams/mode thay đổi
     viewerRendered = true;
+    viewerRevealMode = revealMode;
 
     if (revealMode === 'secretBox') {
         viewerRenderSecretBox(data);
@@ -436,6 +440,7 @@ let viewerFlippedCards = new Set();
 let viewerSpinnersDone = new Set();
 let viewerCurrentOrder = [];
 let viewerTeamsHash = ''; // hash để detect teams thay đổi (bốc lại)
+let viewerRevealMode = ''; // detect reveal mode thay đổi
 
 // ===== Viewer: Secret Box — giống hệt host =====
 function viewerRenderSecretBox(data) {

@@ -144,10 +144,10 @@ const HEROES_DATA = [
 // 4. Copy config từ Project Settings > General > Your apps > Web app
 // 5. Dán vào下方 FIREBASE_CONFIG
 const FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT"
+    apiKey: "AIzaSyADOWz8HRG1y1VOXuZUXfdsl1EQh_BOu0A",
+    authDomain: "customaov.firebaseapp.com",
+    databaseURL: "https://customaov-default-rtdb.firebaseio.com",
+    projectId: "customaov"
 };
 
 let firebaseApp = null;

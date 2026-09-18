@@ -1912,9 +1912,11 @@ $('reloadDataBtn').addEventListener('click', () => {
 });
 
 function init() {
-    // Cleanup old localStorage keys from previous implementations
-    localStorage.removeItem('lq_admin_hash');
-    localStorage.removeItem('lq_admin_key');
+    // Cleanup old localStorage key from previous hash implementation (1-time)
+    const oldHash = localStorage.getItem('lq_admin_hash');
+    if (oldHash) {
+        localStorage.removeItem('lq_admin_hash');
+    }
     // Kiểm tra URL có ?live= không → vào viewer mode
     const params = new URLSearchParams(window.location.search);
     const liveId = params.get('live');

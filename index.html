@@ -136,6 +136,23 @@
             <div id="historyList" class="history-list"></div>
         </section>
 
+        <!-- 3.11 Live Share -->
+<section class="panel" id="liveSection">
+    <h2>🔴 Live Share</h2>
+    <p class="live-hint">Tạo phiên live để bạn bè xem bạn bốc thăm real-time qua link.</p>
+    <button id="goLiveBtn" class="draw-btn" type="button" style="background:linear-gradient(135deg,#ef4444,#dc2626);font-size:16px;">🔴 Tạo phiên Live</button>
+    <div id="liveStatus" hidden>
+        <div class="live-info">
+            <span class="live-badge">🔴 LIVE</span>
+            <span id="liveLinkText" class="live-link-text"></span>
+        </div>
+        <div class="live-actions">
+            <button id="copyLiveLink" type="button">📋 Copy link</button>
+            <button id="stopLiveBtn" class="redraw-btn" type="button">⏹️ Kết thúc</button>
+        </div>
+    </div>
+</section>
+
         <!-- 3.10 Xuất / Nhập -->
         <section class="panel">
             <h2>💾 Dữ liệu</h2>
@@ -168,7 +185,29 @@
         </div>
     </div>
 
+<!-- Modal link chia sẻ live -->
+<div class="modal hidden" id="liveModal">
+    <div class="modal-box">
+        <h3>🔴 Link xem Live</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px">Chia sẻ link này để bạn bè xem bạn bốc thăm real-time:</p>
+        <input type="text" id="liveLinkInput" readonly class="live-link-input">
+        <div style="margin-top:12px;display:flex;gap:8px">
+            <button id="copyLiveLinkBtn" type="button">📋 Copy link</button>
+            <button class="ghost-btn" id="liveModalClose" type="button">Đóng</button>
+        </div>
+    </div>
+</div>
+
     <audio id="spinMusic" src="nhac-xo-so.mp3" loop preload="auto"></audio>
+
+<!-- Viewer mode (shown when ?live= parameter detected) -->
+<section id="viewerArea" class="viewer-area" hidden>
+    <div class="viewer-header">
+        <h2 id="viewerTitle">🔴 Đang kết nối phiên live...</h2>
+        <span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span>
+    </div>
+    <div id="viewerContent" class="viewer-content"></div>
+</section>
 
     <script src="script.js?v=6"></script>
 </body>

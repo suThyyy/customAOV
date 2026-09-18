@@ -198,14 +198,28 @@ function simpleHash(str) {
     return hash.toString(16);
 }
 
-// Kiểm tra admin key đã setup chưa
+// Kiểm tra admin key đã setup chưa (và key có hợp lệ không)
 function isAdminSetup() {
-    return localStorage.getItem(ADMIN_KEY_HASH_KEY) != null;
+    const stored = localStorage.getItem(ADMIN_KEY_HASH_KEY);
+    if (!stored) return false;
+    // Key cũ không hợp lệ → xóa
+    if (stored !== EXPECTED_KEY_HASH) {
+        localStorage.removeItem(ADMIN_KEY_HASH_KEY);
+        return false;
+    }
+    return true;
 }
 
 // Verify admin key
 function verifyAdminKey(key) {
     const stored = localStorage.getItem(ADMIN_KEY_HASH_KEY);
+    if (!stored) return false;
+    // Kiểm tra stored hash có khớp expected không
+    if (stored !== EXPECTED_KEY_HASH) {
+        // Key cũ không hợp lệ → xóa và yêu cầu setup lại
+        localStorage.removeItem(ADMIN_KEY_HASH_KEY);
+        return false;
+    }
     return stored === simpleHash(key);
 }
 

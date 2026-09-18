@@ -3,24 +3,7 @@
     "sessions": {
       "$sessionId": {
         ".read": true,
-        ".write": false,
-        "teams": {
-          ".write": true
-        },
-        "reveals": {
-          ".write": true
-        },
-        "settings": {
-          ".write": true
-        },
-        "status": {
-          ".write": true,
-          ".validate": "newData.val() === 'waiting' || newData.val() === 'live' || newData.val() === 'done'"
-        },
-        "viewers": {
-          ".read": true,
-          ".write": true
-        },
+        ".write": true,
         "hostId": {
           ".write": false
         },
@@ -32,6 +15,21 @@
         },
         "players": {
           ".write": false
+        },
+        "status": {
+          ".validate": "newData.val() === 'waiting' || newData.val() === 'live' || newData.val() === 'done'"
+        },
+        "teams": {
+          ".write": true
+        },
+        "reveals": {
+          ".write": true
+        },
+        "settings": {
+          ".write": true
+        },
+        "viewers": {
+          ".write": true
         },
         "currentReveal": {
           ".write": true

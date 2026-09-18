@@ -266,6 +266,138 @@ function deleteLiveSession() {
     isHost = false;
 }
 
+// Viewer: kết nối vào phiên live
+function joinLiveSession(sessionId) {
+    initFirebase();
+    if (!db) return;
+
+    isLiveMode = true;
+    isHost = false;
+    currentSessionId = sessionId;
+
+    // ẩn UI host, hiện viewer UI
+    document.querySelector('.app').classList.add('viewer-mode');
+    $('viewerArea').hidden = false;
+
+    sessionRef = db.ref('sessions/' + sessionId);
+
+    sessionRef.on('value', (snap) => {
+        const data = snap.val();
+        if (!data) {
+            $('viewerTitle').textContent = '❌ Phiên không tồn tại hoặc đã kết thúc';
+            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Link không hợp lệ hoặc phiên đã hết hạn.</p>';
+            return;
+        }
+        renderViewerSession(data);
+    }, (err) => {
+        console.error('Firebase read error:', err);
+        $('viewerTitle').textContent = '❌ Lỗi kết nối';
+    });
+}
+
+// Viewer: ngắt kết nối
+function leaveLiveSession() {
+    if (sessionRef) {
+        sessionRef.off();
+        sessionRef = null;
+    }
+    isLiveMode = false;
+    currentSessionId = null;
+    document.querySelector('.app').classList.remove('viewer-mode');
+    $('viewerArea').hidden = true;
+}
+
+// Viewer: render toàn bộ phiên theo data từ Firebase
+function renderViewerSession(data) {
+    const title = $('viewerTitle');
+    const content = $('viewerContent');
+    const badge = $('viewerStatusBadge');
+
+    // Cập nhật status badge
+    if (data.status === 'live' || data.status === 'waiting') {
+        badge.hidden = false;
+        badge.textContent = data.status === 'live' ? '🔴 LIVE' : '⏳ ĐANG CHỜ';
+    } else {
+        badge.hidden = true;
+    }
+
+    // Nếu chưa có teams → hiện "đang chờ host bốc thăm"
+    if (!data.teams) {
+        title.textContent = '⏳ Đang chờ host bốc thăm...';
+        content.innerHTML = `
+            <div class="viewer-waiting">
+                <div class="spinner"></div>
+                <p>Phiên: <b>${data.sessionName || 'Live'}</b></p>
+                <p style="font-size:13px;margin-top:8px">Host đang chuẩn bị. Đợi chút...</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Có teams → render bảng kết quả realtime
+    title.textContent = `🔴 ${data.teams.nameA} vs ${data.teams.nameB}`;
+
+    let html = '<div class="viewer-teams">';
+
+    // Team A
+    html += renderViewerTeamColumn(data.teams.teamA, data.teams.nameA, data.teams.balance?.teamA, 'a', data);
+
+    // Team B
+    html += renderViewerTeamColumn(data.teams.teamB, data.teams.nameB, data.teams.balance?.teamB, 'b', data);
+
+    html += '</div>';
+
+    // Nếu done → hiện confetti indicator
+    if (data.status === 'done') {
+        html += '<p style="text-align:center;color:#4ade80;font-weight:700;margin-top:12px">✅ Kết thúc!</p>';
+    }
+
+    content.innerHTML = html;
+
+    // Trigger reveal animation cho các card đã reveal
+    requestAnimationFrame(() => {
+        content.querySelectorAll('.viewer-card').forEach(card => {
+            const idx = parseInt(card.dataset.revealIndex);
+            if (!isNaN(idx) && data.reveals && data.reveals[idx]) {
+                card.classList.add('revealed');
+            }
+        });
+    });
+}
+
+// Viewer: render 1 cột team
+function renderViewerTeamColumn(team, teamName, percent, side, sessionData) {
+    const reveals = sessionData.reveals || [];
+    const currentReveal = sessionData.currentReveal ?? -1;
+
+    let html = `<div class="viewer-team-col">`;
+    html += `<h3>${side === 'a' ? '🔵' : '🔴'} ${teamName}`;
+    if (percent !== undefined) html += ` <span style="font-size:12px;color:var(--muted)">(${percent}%)</span>`;
+    html += `</h3>`;
+
+    team.forEach((p, i) => {
+        const revealIndex = side === 'a' ? i : i + (sessionData.teams?.teamA?.length || 5);
+        const isRevealed = reveals[revealIndex] != null;
+        const revealData = reveals[revealIndex];
+
+        html += `<div class="viewer-card${isRevealed ? ' revealed' : ''}" data-reveal-index="${revealIndex}">`;
+        html += `<div class="viewer-card-avatar">${isRevealed && revealData ? '🎮' : '❓'}</div>`;
+        html += `<div class="viewer-card-info">`;
+        html += `<div class="viewer-card-name">${p.name}</div>`;
+        html += `<div class="viewer-card-role">${p.role === 'flex' ? 'Tự chọn lane' : ROLE_LABELS[p.role] || p.role}</div>`;
+        if (isRevealed && revealData) {
+            html += `<div class="viewer-card-champ">`;
+            html += `${revealData.champion || '?'}`;
+            if (revealData.championWarn) html += ' ⚠️';
+            html += `</div>`;
+        }
+        html += `</div></div>`;
+    });
+
+    html += `</div>`;
+    return html;
+}
+
 // ===== 2. Hằng số =====
 const ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
 const ROLE_LABELS = {

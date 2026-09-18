@@ -933,6 +933,11 @@ function doDraw(players) {
 
     currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning };
 
+    // Live sync: push teams lên Firebase
+    if (isHost && currentSessionId) {
+        syncTeams(currentResult);
+    }
+
     // lưu kết quả vào localStorage (session — F5 không mất)
     try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
 
@@ -1077,6 +1082,16 @@ function renderSlotMachine() {
         const p = order[i];
         spinOne(p, poolFor(p), () => {
             appendRow(p);
+            // Live sync: push reveal lên Firebase
+            if (isHost && currentSessionId) {
+                syncReveal(order.indexOf(p), {
+                    name: p.name,
+                    role: p.role,
+                    champion: p.champion,
+                    championWarn: p.championWarn,
+                    side: p.side
+                });
+            }
             setTimeout(() => run(i + 1), 500);
         });
     }
@@ -1329,11 +1344,26 @@ resultArea.addEventListener('click', (e) => {
         document.querySelectorAll('.flip-card').forEach(c => { if (!c.classList.contains('flipped')) { c.classList.add('flipped'); revealChampName(c); playFlip(); } });
     } else if (e.target.closest('.flip-card')) {
         const card = e.target.closest('.flip-card');
-        if (card.classList.contains('flipped')) return;   // đã lật rồi — không lật lại
+        if (card.classList.contains('flipped')) return;
         card.classList.add('flipped');
         revealChampName(card);
         playFlip();
-        // khi lật hết thì confetti + lưu history
+
+        // Live sync: push reveal khi lật thẻ
+        if (isHost && currentSessionId) {
+            const side = card.dataset.side;
+            const idx = parseInt(card.dataset.idx);
+            const team = side === 'a' ? currentResult.teamA : currentResult.teamB;
+            const p = team[idx];
+            if (p) {
+                const globalIdx = side === 'a' ? idx : idx + currentResult.teamA.length;
+                syncReveal(globalIdx, {
+                    name: p.name, role: p.role, champion: p.champion,
+                    championWarn: p.championWarn, side: side
+                });
+            }
+        }
+
         const total = document.querySelectorAll('.flip-card').length;
         const flipped = document.querySelectorAll('.flip-card.flipped').length;
         if (flipped === total) { fireConfetti(); playTada(); saveHistory(); }

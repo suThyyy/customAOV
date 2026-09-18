@@ -175,6 +175,97 @@ function getDeviceId() {
     return id;
 }
 
+// Host: tạo phiên live mới
+async function createLiveSession() {
+    initFirebase();
+    if (!db) return null;
+
+    const sessionId = generateSessionId();
+    const activePlayers = state.players.filter(p => p.active !== false);
+
+    const sessionData = {
+        createdAt: Date.now(),
+        hostId: getDeviceId(),
+        status: 'waiting',
+        sessionName: 'Bốc Team - ' + new Date().toLocaleDateString('vi-VN'),
+        settings: { ...state.settings },
+        players: activePlayers.map(p => ({
+            id: p.id,
+            name: p.name,
+            tier: p.tier,
+            active: p.active
+        })),
+        currentReveal: -1,
+        reveals: []
+    };
+
+    try {
+        await db.ref('sessions/' + sessionId).set(sessionData);
+        currentSessionId = sessionId;
+        isHost = true;
+        return sessionId;
+    } catch (e) {
+        console.error('Create session failed:', e);
+        alert('⚠️ Không tạo được phiên live. Thử lại!');
+        return null;
+    }
+}
+
+// Host: sync kết quả chia team lên Firebase
+function syncTeams(teamsData) {
+    if (!currentSessionId || !isHost || !db) return;
+    const updates = {};
+    updates['sessions/' + currentSessionId + '/teams'] = {
+        teamA: teamsData.teamA.map(p => ({
+            name: p.name, tier: p.tier, role: p.role,
+            champion: p.champion, championWarn: p.championWarn,
+            side: 'a'
+        })),
+        teamB: teamsData.teamB.map(p => ({
+            name: p.name, tier: p.tier, role: p.role,
+            champion: p.champion, championWarn: p.championWarn,
+            side: 'b'
+        })),
+        nameA: teamsData.nameA,
+        nameB: teamsData.nameB,
+        balance: teamsData.balance || {}
+    };
+    updates['sessions/' + currentSessionId + '/status'] = 'live';
+    db.ref().update(updates);
+}
+
+// Host: sync 1 reveal (1 người đã reveal xong)
+function syncReveal(index, revealData) {
+    if (!currentSessionId || !isHost || !db) return;
+    const updates = {};
+    updates['sessions/' + currentSessionId + '/currentReveal'] = index;
+    updates['sessions/' + currentSessionId + '/reveals/' + index] = {
+        index: index,
+        name: revealData.name,
+        role: revealData.role,
+        champion: revealData.champion,
+        championWarn: revealData.championWarn || false,
+        side: revealData.side
+    };
+    db.ref().update(updates);
+}
+
+// Host: kết thúc phiên live
+function endLiveSession() {
+    if (!currentSessionId || !isHost || !db) return;
+    db.ref('sessions/' + currentSessionId + '/status').set('done');
+    currentSessionId = null;
+    isHost = false;
+}
+
+// Host: xóa phiên live (dọn dẹp)
+function deleteLiveSession() {
+    if (!currentSessionId || !isHost || !db) return;
+    db.ref('sessions/' + currentSessionId).remove();
+    currentSessionId = null;
+    isHost = false;
+}
+
 // ===== 2. Hằng số =====
 const ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
 const ROLE_LABELS = {

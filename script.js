@@ -218,17 +218,41 @@ function changeAdminKey(oldKey, newKey) {
     return true;
 }
 
-// Prompt admin key nếu chưa setup
+// Prompt admin key — chỉ xác minh, KHÔNG tự tạo mới
 function ensureAdminKey() {
-    if (isAdminSetup()) return true;
-    const key = prompt('🔐 Nhập admin key để sử dụng Live Share:\n(Nhập 1 lần, lưu vào trình duyệt)');
-    if (!key || key.length < 4) {
-        alert('Admin key phải ít nhất 4 ký tự!');
+    if (!isAdminSetup()) {
+        // Chưa có ai setup key → từ chối
+        alert('⚠️ Admin key chưa được setup!\nChủ phòng phải setup key trước trên trình duyệt của họ.');
         return false;
     }
-    setupAdminKey(key);
-    alert('✅ Admin key đã được lưu!');
+    // Đã có key → yêu cầu nhập để xác minh
+    const key = prompt('🔐 Nhập admin key:');
+    if (!key) return false;
+    if (!verifyAdminKey(key)) {
+        alert('❌ Sai admin key!');
+        return false;
+    }
     return true;
+}
+
+// Setup admin key (chỉ gọi khi CHƯA có key)
+function initialSetupAdminKey() {
+    if (isAdminSetup()) {
+        alert('Admin key đã được setup!');
+        return;
+    }
+    const key = prompt('🔐 SETUP ADMIN KEY\nNhập key lần đầu (ít nhất 4 ký tự):');
+    if (!key || key.length < 4) {
+        alert('Admin key phải ít nhất 4 ký tự!');
+        return;
+    }
+    const confirm = prompt('Xác nhận admin key:');
+    if (confirm !== key) {
+        alert('❌ Không khớp!');
+        return;
+    }
+    setupAdminKey(key);
+    alert('✅ Admin key đã được lưu! Bạn có thể tạo phiên Live.');
 }
 
 // Host: tạo phiên live mới
@@ -1938,11 +1962,17 @@ function init() {
     try { sessionStorage.setItem('lq_lastResult', localStorage.getItem('lq_lastResult') || ''); } catch (e) {}
 }
 
+// Setup admin key
+$('setupAdminKey').addEventListener('click', (e) => {
+    e.preventDefault();
+    initialSetupAdminKey();
+});
+
 // Đổi admin key
 $('changeAdminKey').addEventListener('click', (e) => {
     e.preventDefault();
     if (!isAdminSetup()) {
-        alert('Chưa setup admin key. Hãy tạo phiên Live để setup.');
+        alert('Chưa setup admin key. Hãy bấm "Setup admin key" trước.');
         return;
     }
     const oldKey = prompt('Nhập admin key cũ:');

@@ -136,6 +136,45 @@ const HEROES_DATA = [
     { "name": "Valhein", "imgUrl": "https://lienquan.garena.vn/wp-content/uploads/2024/05/4b36c6e5e2d1ce9dd9e2841d2902043c5ee04efeb2f2d1.jpg" }
 ];
 
+// ===== Firebase Live Share =====
+const FIREBASE_CONFIG = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT"
+};
+
+let firebaseApp = null;
+let db = null;
+let currentSessionId = null;
+let isLiveMode = false;   // true = viewer mode (URL có ?live=)
+let isHost = false;
+let sessionRef = null;     // Firebase ref cho phiên hiện tại
+
+function initFirebase() {
+    if (firebaseApp) return;
+    try {
+        firebaseApp = firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+    } catch (e) {
+        console.error('Firebase init failed:', e);
+        alert('⚠️ Không kết nối được Firebase. Kiểm tra lại config.');
+    }
+}
+
+function generateSessionId() {
+    return 'live_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
+}
+
+function getDeviceId() {
+    let id = localStorage.getItem('live_device_id');
+    if (!id) {
+        id = 'dev_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('live_device_id', id);
+    }
+    return id;
+}
+
 // ===== 2. Hằng số =====
 const ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
 const ROLE_LABELS = {

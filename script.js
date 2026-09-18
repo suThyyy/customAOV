@@ -191,6 +191,7 @@ async function createLiveSession() {
 
     const sessionData = {
         createdAt: Date.now(),
+        expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour
         hostId: getDeviceId(),
         status: 'waiting',
         sessionName: 'Bốc Team - ' + new Date().toLocaleDateString('vi-VN'),
@@ -202,7 +203,8 @@ async function createLiveSession() {
             active: p.active
         })),
         currentReveal: -1,
-        reveals: []
+        reveals: [],
+        viewers: {}
     };
 
     try {
@@ -220,52 +222,80 @@ async function createLiveSession() {
 // Host: sync kết quả chia team lên Firebase
 function syncTeams(teamsData) {
     if (!currentSessionId || !isHost || !db) return;
-    const updates = {};
-    updates['sessions/' + currentSessionId + '/teams'] = {
-        teamA: teamsData.teamA.map(p => ({
-            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
-            champion: p.champion, championWarn: p.championWarn,
-            side: 'a'
-        })),
-        teamB: teamsData.teamB.map(p => ({
-            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
-            champion: p.champion, championWarn: p.championWarn,
-            side: 'b'
-        })),
-        nameA: teamsData.nameA,
-        nameB: teamsData.nameB,
-        balance: teamsData.balance || {}
-    };
-    // Sync settings (bao gồm revealMode) để viewer biết host đang dùng mode nào
-    updates['sessions/' + currentSessionId + '/settings'] = { ...state.settings };
-    updates['sessions/' + currentSessionId + '/status'] = 'live';
-    // Xóa reveals cũ khi bốc lại
-    updates['sessions/' + currentSessionId + '/reveals'] = null;
-    db.ref().update(updates);
+    // Verify host identity
+    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
+        if (snap.val() !== getDeviceId()) {
+            console.error('Host verification failed: identity mismatch');
+            return;
+        }
+        const updates = {};
+        updates['sessions/' + currentSessionId + '/teams'] = {
+            teamA: teamsData.teamA.map(p => ({
+                name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
+                champion: p.champion, championWarn: p.championWarn,
+                side: 'a'
+            })),
+            teamB: teamsData.teamB.map(p => ({
+                name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
+                champion: p.champion, championWarn: p.championWarn,
+                side: 'b'
+            })),
+            nameA: teamsData.nameA,
+            nameB: teamsData.nameB,
+            balance: teamsData.balance || {}
+        };
+        updates['sessions/' + currentSessionId + '/settings'] = { ...state.settings };
+        updates['sessions/' + currentSessionId + '/status'] = 'live';
+        updates['sessions/' + currentSessionId + '/reveals'] = null;
+        db.ref().update(updates);
+    });
 }
 
 // Host: sync 1 reveal (1 người đã reveal xong)
 function syncReveal(index, revealData) {
     if (!currentSessionId || !isHost || !db) return;
-    const updates = {};
-    updates['sessions/' + currentSessionId + '/currentReveal'] = index;
-    updates['sessions/' + currentSessionId + '/reveals/' + index] = {
-        index: index,
-        name: revealData.name,
-        role: revealData.role,
-        champion: revealData.champion,
-        championWarn: revealData.championWarn || false,
-        side: revealData.side
-    };
-    db.ref().update(updates);
+
+    // Rate limit
+    const now = Date.now();
+    if (now - lastRevealTime < REVEAL_COOLDOWN) {
+        console.warn('Reveal rate limited');
+        return;
+    }
+    lastRevealTime = now;
+
+    // Verify host identity
+    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
+        if (snap.val() !== getDeviceId()) {
+            console.error('Host verification failed: identity mismatch');
+            return;
+        }
+        const updates = {};
+        updates['sessions/' + currentSessionId + '/currentReveal'] = index;
+        updates['sessions/' + currentSessionId + '/reveals/' + index] = {
+            index: index,
+            name: revealData.name,
+            role: revealData.role,
+            champion: revealData.champion,
+            championWarn: revealData.championWarn || false,
+            side: revealData.side
+        };
+        db.ref().update(updates);
+    });
 }
 
 // Host: kết thúc phiên live
 function endLiveSession() {
     if (!currentSessionId || !isHost || !db) return;
-    db.ref('sessions/' + currentSessionId + '/status').set('done');
-    currentSessionId = null;
-    isHost = false;
+    // Verify host identity
+    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
+        if (snap.val() !== getDeviceId()) {
+            console.error('Host verification failed: identity mismatch');
+            return;
+        }
+        db.ref('sessions/' + currentSessionId + '/status').set('done');
+        currentSessionId = null;
+        isHost = false;
+    });
 }
 
 // Host: xóa phiên live (dọn dẹp)
@@ -294,24 +324,52 @@ function joinLiveSession(sessionId) {
 
     sessionRef = db.ref('sessions/' + sessionId);
 
-    sessionRef.on('value', (snap) => {
+    // Kiểm tra session tồn tại + viewer count
+    sessionRef.once('value', (snap) => {
         const data = snap.val();
         if (!data) {
-            $('viewerTitle').textContent = '❌ Phiên không tồn tại hoặc đã kết thúc';
-            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Link không hợp lệ hoặc phiên đã hết hạn.</p>';
-            viewerResetState();
+            $('viewerTitle').textContent = '❌ Phiên không tồn tại';
+            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Link không hợp lệ.</p>';
+            sessionRef = null;
             return;
         }
-        renderViewerSession(data);
-    }, (err) => {
-        console.error('Firebase read error:', err);
-        $('viewerTitle').textContent = '❌ Lỗi kết nối';
+
+        // Check viewer count
+        const viewerCount = data.viewers ? Object.keys(data.viewers).length : 0;
+        if (viewerCount >= 20) {
+            $('viewerTitle').textContent = '❌ Phiên đã đầy (tối đa 20 người xem)';
+            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Vui lòng thử lại sau.</p>';
+            sessionRef = null;
+            return;
+        }
+
+        // Register this viewer
+        const viewerId = getDeviceId();
+        db.ref('sessions/' + sessionId + '/viewers/' + viewerId).set(true);
+
+        // Listen for updates
+        sessionRef.on('value', (snap) => {
+            const data = snap.val();
+            if (!data) {
+                $('viewerTitle').textContent = '❌ Phiên đã kết thúc';
+                $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Phiên không còn tồn tại.</p>';
+                viewerResetState();
+                return;
+            }
+            renderViewerSession(data);
+        }, (err) => {
+            console.error('Firebase read error:', err);
+            $('viewerTitle').textContent = '❌ Lỗi kết nối';
+        });
     });
 }
 
 // Viewer: ngắt kết nối
 function leaveLiveSession() {
-    if (sessionRef) {
+    if (sessionRef && currentSessionId && db) {
+        // Remove self from viewers
+        const viewerId = getDeviceId();
+        db.ref('sessions/' + currentSessionId + '/viewers/' + viewerId).remove();
         sessionRef.off();
         sessionRef = null;
     }
@@ -320,6 +378,14 @@ function leaveLiveSession() {
     document.querySelector('.app').classList.remove('viewer-mode');
     $('viewerArea').hidden = true;
 }
+
+// Auto-cleanup viewer on page close
+window.addEventListener('beforeunload', () => {
+    if (isLiveMode && currentSessionId && db) {
+        const viewerId = getDeviceId();
+        db.ref('sessions/' + currentSessionId + '/viewers/' + viewerId).remove();
+    }
+});
 
 // ===== VIEWER SYSTEM =====
 // Viewer state
@@ -330,6 +396,10 @@ let viewerCurrentOrder = [];
 let viewerTeamsHash = '';
 let viewerRevealMode = '';
 let viewerAudioCtx = null;
+
+// Rate limiting for reveals
+let lastRevealTime = 0;
+const REVEAL_COOLDOWN = 500; // ms
 
 // Viewer: phát âm thanh
 function viewerBeep(freq, dur, type) {
@@ -363,6 +433,15 @@ function renderViewerSession(data) {
     const title = $('viewerTitle');
     const content = $('viewerContent');
     const badge = $('viewerStatusBadge');
+
+    // Check session expiry
+    if (data.expiresAt && Date.now() > data.expiresAt) {
+        badge.hidden = true;
+        title.textContent = '⏰ Phiên đã hết hạn';
+        content.innerHTML = '<p style="text-align:center;color:var(--muted)">Phiên đã hết hạn sau 1 giờ.</p>';
+        viewerResetState();
+        return;
+    }
 
     // Badge
     if (data.status === 'live' || data.status === 'waiting') {

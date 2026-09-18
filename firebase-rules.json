@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "sessions": {
+      "$sessionId": {
+        ".read": true,
+        ".write": false,
+        "teams": {
+          ".write": true
+        },
+        "reveals": {
+          ".write": true
+        },
+        "settings": {
+          ".write": true
+        },
+        "status": {
+          ".write": true
+        },
+        "viewers": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    }
+  }
+}

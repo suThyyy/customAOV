@@ -223,12 +223,12 @@ function syncTeams(teamsData) {
     const updates = {};
     updates['sessions/' + currentSessionId + '/teams'] = {
         teamA: teamsData.teamA.map(p => ({
-            name: p.name, tier: p.tier, role: p.role,
+            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
             champion: p.champion, championWarn: p.championWarn,
             side: 'a'
         })),
         teamB: teamsData.teamB.map(p => ({
-            name: p.name, tier: p.tier, role: p.role,
+            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
             champion: p.champion, championWarn: p.championWarn,
             side: 'b'
         })),
@@ -237,6 +237,8 @@ function syncTeams(teamsData) {
         balance: teamsData.balance || {}
     };
     updates['sessions/' + currentSessionId + '/status'] = 'live';
+    // Xóa reveals cũ khi bốc lại
+    updates['sessions/' + currentSessionId + '/reveals'] = null;
     db.ref().update(updates);
 }
 
@@ -337,6 +339,8 @@ function renderViewerSession(data) {
     // Nếu chưa có teams → hiện "đang chờ host bốc thăm"
     if (!data.teams) {
         title.textContent = '⏳ Đang chờ host bốc thăm...';
+        viewerRendered = false;
+        viewerTeamsHash = '';
         content.innerHTML = `
             <div class="viewer-waiting">
                 <div class="spinner"></div>
@@ -352,11 +356,23 @@ function renderViewerSession(data) {
 
     const revealMode = data.settings?.revealMode || 'secretBox';
 
-    // Nếu đã render rồi → chỉ update reveal data (không render lại)
-    if (viewerRendered) {
+    // Tạo hash để detect teams thay đổi (bốc lại)
+    const newHash = JSON.stringify(data.teams.teamA.map(p => p.name)) + JSON.stringify(data.teams.teamB.map(p => p.name));
+    const teamsChanged = newHash !== viewerTeamsHash;
+
+    if (teamsChanged) {
+        // Teams thay đổi → reset state và render lại
+        viewerRendered = false;
+        viewerFlippedCards.clear();
+        viewerSpinnersDone.clear();
+        viewerCurrentOrder = [];
+        viewerTeamsHash = newHash;
+    }
+
+    // Nếu đã render rồi và teams không đổi → chỉ update reveal
+    if (viewerRendered && !teamsChanged) {
         if (revealMode === 'secretBox') {
             viewerUpdateFlippedCards(data);
-            // Check done
             const allRevealed = data.reveals && data.reveals.length === (data.teams.teamA.length + data.teams.teamB.length) && data.reveals.every(r => r != null);
             if (allRevealed && data.status === 'done') {
                 viewerPlayTada();
@@ -365,8 +381,6 @@ function renderViewerSession(data) {
         } else {
             // Slot Machine: play animation cho reveal mới
             const order = viewerCurrentOrder;
-            let prevDone = 0;
-            data.reveals?.forEach((r, i) => { if (r != null) prevDone++; });
             order.forEach((p, i) => {
                 if (data.reveals?.[i] && !viewerSpinnersDone.has(i)) {
                     viewerPlaySpinForPlayer(p, i, data.reveals[i], false);
@@ -380,7 +394,7 @@ function renderViewerSession(data) {
         return;
     }
 
-    // Lần đầu render
+    // Lần đầu render HOẶC teams thay đổi
     viewerRendered = true;
 
     if (revealMode === 'secretBox') {
@@ -421,6 +435,7 @@ let viewerRendered = false;
 let viewerFlippedCards = new Set();
 let viewerSpinnersDone = new Set();
 let viewerCurrentOrder = [];
+let viewerTeamsHash = ''; // hash để detect teams thay đổi (bốc lại)
 
 // ===== Viewer: Secret Box — giống hệt host =====
 function viewerRenderSecretBox(data) {
@@ -456,7 +471,7 @@ function viewerTeamColumnSecretBox(team, name, percent, side) {
     const cards = team.map((p, i) => `
         <div class="flip-card" data-side="${side}" data-idx="${i}">
             <div class="card-left">
-                <span class="f-avatar">🎮</span>
+                <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>
             <div class="flip-zone">
                 <div class="flip-inner">
@@ -586,8 +601,8 @@ function viewerPlaySpinForPlayer(p, index, revealData, instant) {
     const champNameEl = $('viewerSfChampName');
     const avatarEl = $('viewerSfAvatar');
 
-    // Hiển thị người đang quay
-    avatarEl.innerHTML = '🎮';
+    // Hiển thị người đang quay (avatar thật)
+    avatarEl.innerHTML = avatarHtml(p.avatar);
     nameEl.textContent = p.name;
     roleEl.textContent = p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role;
 

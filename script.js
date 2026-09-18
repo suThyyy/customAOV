@@ -1367,6 +1367,67 @@ $('importInput').addEventListener('change', (e) => { if (e.target.files[0]) impo
 $('modalClose').addEventListener('click', () => $('historyModal').classList.add('hidden'));
 $('historyModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) $('historyModal').classList.add('hidden'); });
 
+// ===== Live Share events =====
+$('goLiveBtn').addEventListener('click', async () => {
+    const active = state.players.filter(p => p.active !== false);
+    if (active.length !== 10) {
+        alert('Cần đúng 10 người chơi để tạo phiên live!');
+        return;
+    }
+    if (currentSessionId) {
+        alert('Đang có phiên live active. Kết thúc phiên cũ trước!');
+        return;
+    }
+
+    $('goLiveBtn').disabled = true;
+    $('goLiveBtn').textContent = '⏳ Đang tạo...';
+
+    const sessionId = await createLiveSession();
+    if (!sessionId) {
+        $('goLiveBtn').disabled = false;
+        $('goLiveBtn').textContent = '🔴 Tạo phiên Live';
+        return;
+    }
+
+    // Hiện link share
+    const link = window.location.origin + window.location.pathname + '?live=' + sessionId;
+    $('liveLinkText').textContent = link;
+    $('liveLinkInput').value = link;
+    $('liveStatus').hidden = false;
+    $('goLiveBtn').hidden = true;
+    $('liveModal').classList.remove('hidden');
+});
+
+$('copyLiveLink').addEventListener('click', () => {
+    const link = $('liveLinkInput').value;
+    navigator.clipboard.writeText(link).then(() => alert('📋 Đã copy link!')).catch(() => {
+        $('liveLinkInput').select();
+        document.execCommand('copy');
+        alert('📋 Đã copy!');
+    });
+});
+
+$('copyLiveLinkBtn').addEventListener('click', () => {
+    const link = $('liveLinkInput').value;
+    navigator.clipboard.writeText(link).then(() => alert('📋 Đã copy link!')).catch(() => {
+        $('liveLinkInput').select();
+        document.execCommand('copy');
+        alert('📋 Đã copy!');
+    });
+});
+
+$('liveModalClose').addEventListener('click', () => $('liveModal').classList.add('hidden'));
+$('liveModal').addEventListener('click', (e) => { if (e.target === e.currentTarget) $('liveModal').classList.add('hidden'); });
+
+$('stopLiveBtn').addEventListener('click', () => {
+    if (!confirm('Kết thúc phiên live? Người xem sẽ không thấy gì thêm.')) return;
+    endLiveSession();
+    $('liveStatus').hidden = true;
+    $('goLiveBtn').hidden = false;
+    $('goLiveBtn').disabled = false;
+    $('goLiveBtn').textContent = '🔴 Tạo phiên Live';
+});
+
 // ===== 25. Init =====
 // ===== Xuất members.json (chỉ phần thành viên: tên + tier + avatar) =====
 function exportMembers() {
@@ -1432,6 +1493,14 @@ $('reloadDataBtn').addEventListener('click', () => {
 });
 
 function init() {
+    // Kiểm tra URL có ?live= không → vào viewer mode
+    const params = new URLSearchParams(window.location.search);
+    const liveId = params.get('live');
+    if (liveId) {
+        joinLiveSession(liveId);
+        return;  // không cần init UI host
+    }
+
     loadState();
     $('tagline').textContent = TAGLINES[rand(TAGLINES.length)];
     renderTierSelect();
@@ -1443,10 +1512,8 @@ function init() {
     loadDefaultMembers();
 
     updateDrawStatus();
-    // nếu data localStorage khác data gốc repo (đã từng chỉnh sửa local) -> hiện nút nạp lại
     if (localStorage.getItem('lq_state')) $('reloadDataBtn').hidden = false;
 
-    // KHÔNG tự render kết quả cũ khi load trang (kết quả cũ xem qua mục "🕘 Lịch sử → Xem lại")
     try { sessionStorage.setItem('lq_lastResult', localStorage.getItem('lq_lastResult') || ''); } catch (e) {}
 }
 init();

@@ -137,6 +137,12 @@ const HEROES_DATA = [
 ];
 
 // ===== Firebase Live Share =====
+// HƯỚNG DẪN: Tạo Firebase project tại https://console.firebase.google.com
+// 1. Tạo project mới (hoặc dùng project có sẵn)
+// 2. Bật Realtime Database trong Build > Realtime Database
+// 3. Set Rules: { "rules": { "sessions": { "$sessionId": { ".read": true, ".write": true } } } }
+// 4. Copy config từ Project Settings > General > Your apps > Web app
+// 5. Dán vào下方 FIREBASE_CONFIG
 const FIREBASE_CONFIG = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -1546,4 +1552,12 @@ function init() {
 
     try { sessionStorage.setItem('lq_lastResult', localStorage.getItem('lq_lastResult') || ''); } catch (e) {}
 }
+
+// Cleanup: xóa phiên live khi host đóng trang
+window.addEventListener('beforeunload', () => {
+    if (isHost && currentSessionId) {
+        endLiveSession();
+    }
+});
+
 init();

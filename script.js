@@ -273,80 +273,70 @@ async function createLiveSession() {
 // Host: sync kết quả chia team lên Firebase
 function syncTeams(teamsData) {
     if (!currentSessionId || !isHost || !db) return;
-    // Verify host identity
-    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
-        if (snap.val() !== getDeviceId()) {
-            console.error('Host verification failed: identity mismatch');
-            return;
-        }
-        const updates = {};
-        updates['sessions/' + currentSessionId + '/teams'] = {
-            teamA: teamsData.teamA.map(p => ({
-                name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
-                champion: p.champion, championWarn: p.championWarn,
-                side: 'a'
-            })),
-            teamB: teamsData.teamB.map(p => ({
-                name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
-                champion: p.champion, championWarn: p.championWarn,
-                side: 'b'
-            })),
-            nameA: teamsData.nameA,
-            nameB: teamsData.nameB,
-            balance: teamsData.balance || {}
-        };
-        updates['sessions/' + currentSessionId + '/settings'] = { ...state.settings };
-        updates['sessions/' + currentSessionId + '/status'] = 'live';
-        updates['sessions/' + currentSessionId + '/reveals'] = null;
-        db.ref().update(updates);
-    });
+    const updates = {};
+    updates['sessions/' + currentSessionId + '/teams'] = {
+        teamA: teamsData.teamA.map(p => ({
+            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
+            champion: p.champion, championWarn: p.championWarn,
+            side: 'a'
+        })),
+        teamB: teamsData.teamB.map(p => ({
+            name: p.name, tier: p.tier, role: p.role, avatar: p.avatar,
+            champion: p.champion, championWarn: p.championWarn,
+            side: 'b'
+        })),
+        nameA: teamsData.nameA,
+        nameB: teamsData.nameB,
+        balance: teamsData.balance || {}
+    };
+    updates['sessions/' + currentSessionId + '/settings'] = { ...state.settings };
+    updates['sessions/' + currentSessionId + '/status'] = 'live';
+    updates['sessions/' + currentSessionId + '/reveals'] = null;
+    db.ref().update(updates);
 }
 
 // Host: sync 1 reveal (1 người đã reveal xong)
 function syncReveal(index, revealData) {
     if (!currentSessionId || !isHost || !db) return;
+    const updates = {};
+    updates['sessions/' + currentSessionId + '/currentReveal'] = index;
+    updates['sessions/' + currentSessionId + '/reveals/' + index] = {
+        index: index,
+        name: revealData.name,
+        role: revealData.role,
+        champion: revealData.champion,
+        championWarn: revealData.championWarn || false,
+        side: revealData.side
+    };
+    db.ref().update(updates);
+}
 
-    // Rate limit
-    const now = Date.now();
-    if (now - lastRevealTime < REVEAL_COOLDOWN) {
-        console.warn('Reveal rate limited');
-        return;
-    }
-    lastRevealTime = now;
-
-    // Verify host identity
-    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
-        if (snap.val() !== getDeviceId()) {
-            console.error('Host verification failed: identity mismatch');
-            return;
+// Host: sync tất cả reveals cùng lúc (dùng cho "Lật tất cả" / "Bỏ qua hiệu ứng")
+function syncAllReveals(revealArray) {
+    if (!currentSessionId || !isHost || !db) return;
+    const updates = {};
+    updates['sessions/' + currentSessionId + '/currentReveal'] = revealArray.length - 1;
+    revealArray.forEach((r, i) => {
+        if (r) {
+            updates['sessions/' + currentSessionId + '/reveals/' + i] = {
+                index: i,
+                name: r.name,
+                role: r.role,
+                champion: r.champion,
+                championWarn: r.championWarn || false,
+                side: r.side
+            };
         }
-        const updates = {};
-        updates['sessions/' + currentSessionId + '/currentReveal'] = index;
-        updates['sessions/' + currentSessionId + '/reveals/' + index] = {
-            index: index,
-            name: revealData.name,
-            role: revealData.role,
-            champion: revealData.champion,
-            championWarn: revealData.championWarn || false,
-            side: revealData.side
-        };
-        db.ref().update(updates);
     });
+    db.ref().update(updates);
 }
 
 // Host: kết thúc phiên live
 function endLiveSession() {
     if (!currentSessionId || !isHost || !db) return;
-    // Verify host identity
-    db.ref('sessions/' + currentSessionId + '/hostId').once('value', (snap) => {
-        if (snap.val() !== getDeviceId()) {
-            console.error('Host verification failed: identity mismatch');
-            return;
-        }
-        db.ref('sessions/' + currentSessionId + '/status').set('done');
-        currentSessionId = null;
-        isHost = false;
-    });
+    db.ref('sessions/' + currentSessionId + '/status').set('done');
+    currentSessionId = null;
+    isHost = false;
 }
 
 // Host: xóa phiên live (dọn dẹp)
@@ -447,10 +437,6 @@ let viewerCurrentOrder = [];
 let viewerTeamsHash = '';
 let viewerRevealMode = '';
 let viewerAudioCtx = null;
-
-// Rate limiting for reveals
-let lastRevealTime = 0;
-const REVEAL_COOLDOWN = 500; // ms
 
 // Viewer: phát âm thanh
 function viewerBeep(freq, dur, type) {
@@ -1468,16 +1454,19 @@ function renderSlotMachine() {
     skipBtn.addEventListener('click', () => {
         if (skipped || finished) return;
         skipped = true;
-        // hiện hết phần còn lại ngay + sync Firebase
+        // Thu thập tất cả reveals
+        const allReveals = [];
         for (let i = 0; i < order.length; i++) {
             const p = order[i];
             appendRow(p);
-            if (isHost && currentSessionId) {
-                syncReveal(i, {
-                    name: p.name, role: p.role, champion: p.champion,
-                    championWarn: p.championWarn, side: p.side
-                });
-            }
+            allReveals[i] = {
+                name: p.name, role: p.role, champion: p.champion,
+                championWarn: p.championWarn, side: p.side
+            };
+        }
+        // Sync tất cả cùng lúc
+        if (isHost && currentSessionId) {
+            syncAllReveals(allReveals);
         }
         finish();
     });
@@ -1710,27 +1699,30 @@ resultArea.addEventListener('click', (e) => {
     if (e.target.id === 'copyBtn') {
         navigator.clipboard.writeText(buildCopyText()).then(() => alert('📋 Đã copy!')).catch(() => alert('Không copy được'));
     } else if (e.target.id === 'revealAllBtn') {
+        const allReveals = [];
         document.querySelectorAll('.flip-card').forEach(c => {
             if (!c.classList.contains('flipped')) {
                 c.classList.add('flipped');
                 revealChampName(c);
                 playFlip();
-                // Live sync: push reveal cho từng card
-                if (isHost && currentSessionId) {
-                    const side = c.dataset.side;
-                    const idx = parseInt(c.dataset.idx);
-                    const team = side === 'a' ? currentResult.teamA : currentResult.teamB;
-                    const p = team[idx];
-                    if (p) {
-                        const globalIdx = side === 'a' ? idx : idx + currentResult.teamA.length;
-                        syncReveal(globalIdx, {
-                            name: p.name, role: p.role, champion: p.champion,
-                            championWarn: p.championWarn, side: side
-                        });
-                    }
-                }
+            }
+            // Thu thập reveal data
+            const side = c.dataset.side;
+            const idx = parseInt(c.dataset.idx);
+            const team = side === 'a' ? currentResult.teamA : currentResult.teamB;
+            const p = team[idx];
+            if (p) {
+                const globalIdx = side === 'a' ? idx : idx + currentResult.teamA.length;
+                allReveals[globalIdx] = {
+                    name: p.name, role: p.role, champion: p.champion,
+                    championWarn: p.championWarn, side: side
+                };
             }
         });
+        // Sync tất cả cùng lúc
+        if (isHost && currentSessionId) {
+            syncAllReveals(allReveals);
+        }
     } else if (e.target.closest('.flip-card')) {
         const card = e.target.closest('.flip-card');
         if (card.classList.contains('flipped')) return;

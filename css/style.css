@@ -1288,14 +1288,25 @@ body {
     border-radius: 8px;
     background: rgba(255,255,255,0.03);
     margin-bottom: 6px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.4s ease, transform 0.4s ease, box-shadow 0.3s ease;
 }
 
 .viewer-card.revealed {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* Secret Box: card chưa lật — viền sáng nhẹ để báo "đang ẩn" */
+.viewer-card.pending-reveal {
+    border: 1px dashed rgba(168, 85, 247, 0.4);
+}
+
+/* Secret Box: card đã lật — viền sáng strong */
+.viewer-card.revealed {
+    border: 1px solid rgba(74, 222, 128, 0.5);
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
 }
 
 .viewer-card-avatar {

@@ -360,21 +360,64 @@ function renderViewerSession(data) {
 
     content.innerHTML = html;
 
-    // Trigger reveal animation cho các card đã reveal
+    // Trigger reveal animation + add pending class + play sound
+    const prevRevealCount = content.querySelectorAll('.viewer-card.revealed').length;
+    let newRevealCount = 0;
     requestAnimationFrame(() => {
+        const revealMode = data.settings?.revealMode || 'secretBox';
         content.querySelectorAll('.viewer-card').forEach(card => {
             const idx = parseInt(card.dataset.revealIndex);
             if (!isNaN(idx) && data.reveals && data.reveals[idx]) {
+                if (!card.classList.contains('revealed')) {
+                    newRevealCount++;
+                }
                 card.classList.add('revealed');
+                card.classList.remove('pending-reveal');
+            } else if (revealMode === 'secretBox') {
+                card.classList.add('pending-reveal');
             }
         });
+        // Phát âm thanh khi có reveal mới
+        if (newRevealCount > 0) viewerPlayFlip();
+        // Nếu tất cả đã reveal xong → confetti + tada
+        if (data.status === 'done') {
+            viewerPlayTada();
+            if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        }
     });
 }
+
+// Viewer: lấy random 1 tướng giả để hiển thị trước khi host lật
+function getRandomFakeChampion() {
+    const allChamps = HEROES_DATA.map(h => h.name);
+    return allChamps[Math.floor(Math.random() * allChamps.length)];
+}
+
+// Viewer: phát âm thanh khi có reveal mới (dùng Web Audio API)
+let viewerAudioCtx = null;
+function viewerBeep(freq, dur, type) {
+    try {
+        if (!viewerAudioCtx) viewerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = viewerAudioCtx.createOscillator();
+        const g = viewerAudioCtx.createGain();
+        o.type = type || 'square';
+        o.frequency.value = freq || 440;
+        g.gain.value = 0.06;
+        o.connect(g); g.connect(viewerAudioCtx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.001, viewerAudioCtx.currentTime + dur);
+        o.stop(viewerAudioCtx.currentTime + dur);
+    } catch (e) {}
+}
+
+function viewerPlayFlip() { viewerBeep(620, 0.08, 'triangle'); }
+function viewerPlayTada() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => viewerBeep(f, 0.2, 'triangle'), i * 110)); }
 
 // Viewer: render 1 cột team
 function renderViewerTeamColumn(team, teamName, percent, side, sessionData) {
     const reveals = sessionData.reveals || [];
-    const currentReveal = sessionData.currentReveal ?? -1;
+    const revealMode = sessionData.settings?.revealMode || 'secretBox';
+    const isSecretBox = revealMode === 'secretBox';
 
     let html = `<div class="viewer-team-col">`;
     html += `<h3>${side === 'a' ? '🔵' : '🔴'} ${teamName}`;
@@ -387,16 +430,36 @@ function renderViewerTeamColumn(team, teamName, percent, side, sessionData) {
         const revealData = reveals[revealIndex];
 
         html += `<div class="viewer-card${isRevealed ? ' revealed' : ''}" data-reveal-index="${revealIndex}">`;
-        html += `<div class="viewer-card-avatar">${isRevealed && revealData ? '🎮' : '❓'}</div>`;
-        html += `<div class="viewer-card-info">`;
-        html += `<div class="viewer-card-name">${p.name}</div>`;
-        html += `<div class="viewer-card-role">${p.role === 'flex' ? 'Tự chọn lane' : ROLE_LABELS[p.role] || p.role}</div>`;
-        if (isRevealed && revealData) {
-            html += `<div class="viewer-card-champ">`;
-            html += `${revealData.champion || '?'}`;
-            if (revealData.championWarn) html += ' ⚠️';
-            html += `</div>`;
+
+        if (isSecretBox) {
+            // Secret Box: hiện avatar + tên, tướng ẩn bằng dấu ??? (sẽ hiện random fake nếu chưa lật)
+            html += `<div class="viewer-card-avatar">🎮</div>`;
+            html += `<div class="viewer-card-info">`;
+            html += `<div class="viewer-card-name">${p.name}</div>`;
+            html += `<div class="viewer-card-role">${p.role === 'flex' ? 'Tự chọn lane' : ROLE_LABELS[p.role] || p.role}</div>`;
+            if (isRevealed && revealData) {
+                // Đã lật → hiện tướng THẬT
+                html += `<div class="viewer-card-champ">${revealData.champion || '?'}${revealData.championWarn ? ' ⚠️' : ''}</div>`;
+            } else {
+                // Chưa lật → hiện dấu ??? + viền dashed
+                html += `<div class="viewer-card-champ" style="color:var(--muted)">???</div>`;
+            }
+            html += `</div></div>`;
+            // Thêm class pending-reveal nếu chưa lật
+            if (!isRevealed) {
+                //替补: sẽ thêm class bằng JS sau khi render
+            }
+        } else {
+            // Slot Machine: hiện kết quả ngay khi host reveal
+            html += `<div class="viewer-card-avatar">🎮</div>`;
+            html += `<div class="viewer-card-info">`;
+            html += `<div class="viewer-card-name">${p.name}</div>`;
+            html += `<div class="viewer-card-role">${p.role === 'flex' ? 'Tự chọn lane' : ROLE_LABELS[p.role] || p.role}</div>`;
+            if (isRevealed && revealData) {
+                html += `<div class="viewer-card-champ">${revealData.champion || '?'}${revealData.championWarn ? ' ⚠️' : ''}</div>`;
+            }
         }
+
         html += `</div></div>`;
     });
 

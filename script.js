@@ -450,26 +450,20 @@ function viewerRenderSecretBox(data) {
     });
 
     let html = `<div class="teams-grid">`;
-    html += viewerTeamColumnSecretBox(teams.teamA, teams.nameA, teams.balance?.teamA, 'a');
+    html += viewerTeamColumnSecretBox(teams.teamA, teams.nameA, teams.balance?.teamA, 'a', reveals, 0);
     html += `<div class="team-vs">VS</div>`;
-    html += viewerTeamColumnSecretBox(teams.teamB, teams.nameB, teams.balance?.teamB, 'b');
+    html += viewerTeamColumnSecretBox(teams.teamB, teams.nameB, teams.balance?.teamB, 'b', reveals, teams.teamA.length);
     html += `</div>`;
     content.innerHTML = html;
-
-    // Flip các card đã reveal
-    requestAnimationFrame(() => {
-        order.forEach((p, i) => {
-            const key = p.side + '_' + p.idx;
-            if (reveals[i] && !viewerFlippedCards.has(key)) {
-                viewerFlipCard(p.side, p.idx);
-            }
-        });
-    });
 }
 
-function viewerTeamColumnSecretBox(team, name, percent, side) {
-    const cards = team.map((p, i) => `
-        <div class="flip-card" data-side="${side}" data-idx="${i}">
+function viewerTeamColumnSecretBox(team, name, percent, side, reveals, startIndex) {
+    const cards = team.map((p, i) => {
+        const globalIdx = startIndex + i;
+        const isRevealed = reveals && reveals[globalIdx] != null;
+        const r = isRevealed ? reveals[globalIdx] : null;
+        return `
+        <div class="flip-card${isRevealed ? ' flipped' : ''}" data-side="${side}" data-idx="${i}">
             <div class="card-left">
                 <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>
@@ -479,18 +473,18 @@ function viewerTeamColumnSecretBox(team, name, percent, side) {
                         <span class="f-question">?</span>
                     </div>
                     <div class="flip-face flip-back">
-                        ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
+                        ${p.champion ? `<img class="f-champ-img" src="${isRevealed ? heroImg(r.champion) : heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
                     </div>
                 </div>
             </div>
             <div class="card-info">
                 <span class="f-name">${p.name}</span>
                 <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role}</span>
-                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
+                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + `<span class="champ-reveal">${isRevealed ? (r.champion || '?') : '???'}</span>` : 'Tự chọn tướng'}</span>
             </div>
             ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
     return `<div class="team-col">
         <h3>${side === 'a' ? '🔵' : '🔴'} ${name}</h3>
         ${percent !== undefined ? `<div class="team-percent">💪 ${percent}% sức mạnh</div>` : ''}
@@ -529,6 +523,12 @@ function viewerUpdateFlippedCards(data) {
         const r = reveals[i];
         const card = document.querySelector(`.flip-card[data-side="${p.side}"][data-idx="${p.idx}"]`);
         if (!card) return;
+
+        // Thêm flipped class nếu chưa có
+        if (!card.classList.contains('flipped')) {
+            card.classList.add('flipped');
+            viewerPlayFlip();
+        }
 
         // Update champion img
         const img = card.querySelector('.f-champ-img');

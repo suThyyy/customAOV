@@ -563,10 +563,8 @@ function viewerSecretBoxColumn(team, name, percent, side, reveals, startIndex) {
         const globalIdx = startIndex + i;
         const r = reveals[globalIdx];
         const isRevealed = r != null;
-        // host chỉ render flip-front, KHÔNG render flip-back chứa img
-        // flip-back render sau khi reveal
         return `
-        <div class="flip-card" data-side="${side}" data-idx="${i}">
+        <div class="flip-card${isRevealed ? ' flipped' : ''}" data-side="${side}" data-idx="${i}">
             <div class="card-left">
                 <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>

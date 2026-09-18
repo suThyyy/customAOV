@@ -236,6 +236,8 @@ function syncTeams(teamsData) {
         nameB: teamsData.nameB,
         balance: teamsData.balance || {}
     };
+    // Sync settings (bao gồm revealMode) để viewer biết host đang dùng mode nào
+    updates['sessions/' + currentSessionId + '/settings'] = { ...state.settings };
     updates['sessions/' + currentSessionId + '/status'] = 'live';
     // Xóa reveals cũ khi bốc lại
     updates['sessions/' + currentSessionId + '/reveals'] = null;
@@ -283,13 +285,10 @@ function joinLiveSession(sessionId) {
     isHost = false;
     currentSessionId = sessionId;
 
-    // Reset viewer state
-    viewerRendered = false;
-    viewerFlippedCards.clear();
-    viewerSpinnersDone.clear();
-    viewerCurrentOrder = [];
+    viewerResetState();
+    viewerTeamsHash = '';
+    viewerRevealMode = '';
 
-    // ẩn UI host, hiện viewer UI
     document.querySelector('.app').classList.add('viewer-mode');
     $('viewerArea').hidden = false;
 
@@ -300,7 +299,7 @@ function joinLiveSession(sessionId) {
         if (!data) {
             $('viewerTitle').textContent = '❌ Phiên không tồn tại hoặc đã kết thúc';
             $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Link không hợp lệ hoặc phiên đã hết hạn.</p>';
-            viewerRendered = false;
+            viewerResetState();
             return;
         }
         renderViewerSession(data);
@@ -322,109 +321,17 @@ function leaveLiveSession() {
     $('viewerArea').hidden = true;
 }
 
-// Viewer: render toàn bộ phiên theo data từ Firebase
-function renderViewerSession(data) {
-    const title = $('viewerTitle');
-    const content = $('viewerContent');
-    const badge = $('viewerStatusBadge');
-
-    // Cập nhật status badge
-    if (data.status === 'live' || data.status === 'waiting') {
-        badge.hidden = false;
-        badge.textContent = data.status === 'live' ? '🔴 LIVE' : '⏳ ĐANG CHỜ';
-    } else {
-        badge.hidden = true;
-    }
-
-    // Nếu chưa có teams → hiện "đang chờ host bốc thăm"
-    if (!data.teams) {
-        title.textContent = '⏳ Đang chờ host bốc thăm...';
-        viewerRendered = false;
-        viewerTeamsHash = '';
-        content.innerHTML = `
-            <div class="viewer-waiting">
-                <div class="spinner"></div>
-                <p>Phiên: <b>${data.sessionName || 'Live'}</b></p>
-                <p style="font-size:13px;margin-top:8px">Host đang chuẩn bị. Đợi chút...</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Có teams → render UI GIỐNG HOST
-    title.textContent = `🔴 ${data.teams.nameA} vs ${data.teams.nameB}`;
-
-    const revealMode = data.settings?.revealMode || 'secretBox';
-
-    // Tạo hash để detect teams thay đổi (bốc lại)
-    const newHash = JSON.stringify(data.teams.teamA.map(p => p.name)) + JSON.stringify(data.teams.teamB.map(p => p.name));
-    const newRevealMode = data.settings?.revealMode || 'secretBox';
-    const teamsChanged = newHash !== viewerTeamsHash;
-    const modeChanged = newRevealMode !== viewerRevealMode && viewerRevealMode !== '';
-
-    // Nếu mode thay đổi → force re-render
-    if (modeChanged) {
-        viewerRendered = false;
-        viewerFlippedCards.clear();
-        viewerSpinnersDone.clear();
-        viewerCurrentOrder = [];
-    }
-
-    if (teamsChanged) {
-        viewerRendered = false;
-        viewerFlippedCards.clear();
-        viewerSpinnersDone.clear();
-        viewerCurrentOrder = [];
-    }
-
-    viewerTeamsHash = newHash;
-    viewerRevealMode = newRevealMode;
-
-    // Nếu đã render rồi và không có gì thay đổi → chỉ update reveal
-    if (viewerRendered && !teamsChanged && !modeChanged) {
-        if (revealMode === 'secretBox') {
-            viewerUpdateFlippedCards(data);
-            const allRevealed = data.reveals && data.reveals.length === (data.teams.teamA.length + data.teams.teamB.length) && data.reveals.every(r => r != null);
-            if (allRevealed && data.status === 'done') {
-                viewerPlayTada();
-                if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-            }
-        } else {
-            // Slot Machine: play animation cho reveal mới
-            const order = viewerCurrentOrder;
-            order.forEach((p, i) => {
-                if (data.reveals?.[i] && !viewerSpinnersDone.has(i)) {
-                    viewerPlaySpinForPlayer(p, i, data.reveals[i], false);
-                }
-            });
-            if (data.status === 'done') {
-                viewerPlayTada();
-                if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-            }
-        }
-        return;
-    }
-
-    // Lần đầu render HOẶC teams/mode thay đổi
-    if (!viewerRendered) {
-        viewerRendered = true;
-
-        if (revealMode === 'secretBox') {
-            viewerRenderSecretBox(data);
-        } else {
-            viewerRenderSlotMachine(data);
-        }
-    }
-
-    // Done
-    if (data.status === 'done') {
-        viewerPlayTada();
-        if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-    }
-}
-
-// Viewer: phát âm thanh khi có reveal mới (dùng Web Audio API)
+// ===== VIEWER SYSTEM =====
+// Viewer state
+let viewerRendered = false;
+let viewerFlippedCards = new Set();
+let viewerSpinnersDone = new Set();
+let viewerCurrentOrder = [];
+let viewerTeamsHash = '';
+let viewerRevealMode = '';
 let viewerAudioCtx = null;
+
+// Viewer: phát âm thanh
 function viewerBeep(freq, dur, type) {
     try {
         if (!viewerAudioCtx) viewerAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -443,41 +350,107 @@ function viewerPlayFlip() { viewerBeep(620, 0.08, 'triangle'); }
 function viewerPlayTada() { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => viewerBeep(f, 0.2, 'triangle'), i * 110)); }
 function viewerPlayTick() { viewerBeep(800, 0.03, 'square'); }
 
-// Viewer: theo dõi trạng thái đã render
-let viewerRendered = false;
-let viewerFlippedCards = new Set();
-let viewerSpinnersDone = new Set();
-let viewerCurrentOrder = [];
-let viewerTeamsHash = ''; // hash để detect teams thay đổi (bốc lại)
-let viewerRevealMode = ''; // detect reveal mode thay đổi
+// Viewer: reset state
+function viewerResetState() {
+    viewerRendered = false;
+    viewerFlippedCards.clear();
+    viewerSpinnersDone.clear();
+    viewerCurrentOrder = [];
+}
 
-// ===== Viewer: Secret Box — giống hệt host =====
+// ===== Viewer: render chính =====
+function renderViewerSession(data) {
+    const title = $('viewerTitle');
+    const content = $('viewerContent');
+    const badge = $('viewerStatusBadge');
+
+    // Badge
+    if (data.status === 'live' || data.status === 'waiting') {
+        badge.hidden = false;
+        badge.textContent = data.status === 'live' ? '🔴 LIVE' : '⏳ ĐANG CHỜ';
+    } else {
+        badge.hidden = true;
+    }
+
+    // Chưa có teams → chờ
+    if (!data.teams) {
+        title.textContent = '⏳ Đang chờ host bốc thăm...';
+        viewerResetState();
+        content.innerHTML = `
+            <div class="viewer-waiting">
+                <div class="spinner"></div>
+                <p>Phiên: <b>${data.sessionName || 'Live'}</b></p>
+                <p style="font-size:13px;margin-top:8px">Host đang chuẩn bị. Đợi chút...</p>
+            </div>
+        `;
+        return;
+    }
+
+    title.textContent = `🔴 ${data.teams.nameA} vs ${data.teams.nameB}`;
+
+    const revealMode = data.settings?.revealMode || 'secretBox';
+    const teamsHash = JSON.stringify(data.teams.teamA.map(p => p.name)) + JSON.stringify(data.teams.teamB.map(p => p.name));
+
+    // Detect thay đổi → force re-render
+    if (teamsHash !== viewerTeamsHash || revealMode !== viewerRevealMode) {
+        viewerResetState();
+        viewerTeamsHash = teamsHash;
+        viewerRevealMode = revealMode;
+    }
+
+    // Đã render xong và không đổi gì → update reveals
+    if (viewerRendered) {
+        if (revealMode === 'secretBox') {
+            viewerUpdateSecretBox(data);
+        } else {
+            viewerUpdateSlotMachine(data);
+        }
+        viewerCheckDone(data);
+        return;
+    }
+
+    // Render mới
+    viewerRendered = true;
+
+    if (revealMode === 'secretBox') {
+        viewerRenderSecretBox(data);
+    } else {
+        viewerRenderSlotMachine(data);
+    }
+
+    viewerCheckDone(data);
+}
+
+function viewerCheckDone(data) {
+    if (data.status === 'done') {
+        viewerPlayTada();
+        if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+    }
+}
+
+// ===== Viewer: Secret Box =====
 function viewerRenderSecretBox(data) {
     const content = $('viewerContent');
     const teams = data.teams;
     const reveals = data.reveals || [];
 
-    // Tạo order: team A rồi team B
-    const order = [];
-    [teams.teamA, teams.teamB].forEach((team, ti) => {
-        team.forEach((p, i) => order.push({ ...p, side: ti === 0 ? 'a' : 'b', idx: i }));
-    });
-
     let html = `<div class="teams-grid">`;
-    html += viewerTeamColumnSecretBox(teams.teamA, teams.nameA, teams.balance?.teamA, 'a', reveals, 0);
+    html += viewerSecretBoxColumn(teams.teamA, teams.nameA, teams.balance?.teamA, 'a', reveals, 0);
     html += `<div class="team-vs">VS</div>`;
-    html += viewerTeamColumnSecretBox(teams.teamB, teams.nameB, teams.balance?.teamB, 'b', reveals, teams.teamA.length);
+    html += viewerSecretBoxColumn(teams.teamB, teams.nameB, teams.balance?.teamB, 'b', reveals, teams.teamA.length);
     html += `</div>`;
     content.innerHTML = html;
 }
 
-function viewerTeamColumnSecretBox(team, name, percent, side, reveals, startIndex) {
+function viewerSecretBoxColumn(team, name, percent, side, reveals, startIndex) {
     const cards = team.map((p, i) => {
         const globalIdx = startIndex + i;
-        const isRevealed = reveals && reveals[globalIdx] != null;
-        const r = isRevealed ? reveals[globalIdx] : null;
+        const r = reveals[globalIdx];
+        const isRevealed = r != null;
+        // host chỉ render flip-front, KHÔNG render flip-back chứa img
+        // flip-back render sau khi reveal
         return `
-        <div class="flip-card${isRevealed ? ' flipped' : ''}" data-side="${side}" data-idx="${i}">
+        <div class="flip-card" data-side="${side}" data-idx="${i}">
             <div class="card-left">
                 <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>
@@ -487,14 +460,14 @@ function viewerTeamColumnSecretBox(team, name, percent, side, reveals, startInde
                         <span class="f-question">?</span>
                     </div>
                     <div class="flip-face flip-back">
-                        ${p.champion ? `<img class="f-champ-img" src="${isRevealed ? heroImg(r.champion) : heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
+                        ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
                     </div>
                 </div>
             </div>
             <div class="card-info">
                 <span class="f-name">${p.name}</span>
                 <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role}</span>
-                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + `<span class="champ-reveal">${isRevealed ? (r.champion || '?') : '???'}</span>` : 'Tự chọn tướng'}</span>
+                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
             </div>
             ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
         </div>`;
@@ -506,74 +479,46 @@ function viewerTeamColumnSecretBox(team, name, percent, side, reveals, startInde
     </div>`;
 }
 
-// Flip 1 card (gọi khi host reveal)
-function viewerFlipCard(side, idx) {
-    const key = side + '_' + idx;
-    if (viewerFlippedCards.has(key)) return;
-    viewerFlippedCards.add(key);
-
-    const card = document.querySelector(`.flip-card[data-side="${side}"][data-idx="${idx}"]`);
-    if (!card) return;
-
-    // Lấy data từ Firebase (gọi lại renderViewerSession sẽ cập nhật)
-    // Chỉ cần thêm class flipped
-    card.classList.add('flipped');
-    viewerPlayFlip();
-}
-
-// Cập nhật champion img + tên sau khi flip
-function viewerUpdateFlippedCards(data) {
+function viewerUpdateSecretBox(data) {
     const reveals = data.reveals || [];
     const teams = data.teams;
     if (!teams) return;
 
-    const order = [];
-    [teams.teamA, teams.teamB].forEach((team, ti) => {
-        team.forEach((p, i) => order.push({ ...p, side: ti === 0 ? 'a' : 'b', idx: i }));
-    });
-
-    order.forEach((p, i) => {
-        if (!reveals[i]) return;
+    const totalPlayers = teams.teamA.length + teams.teamB.length;
+    for (let i = 0; i < totalPlayers; i++) {
+        if (!reveals[i]) continue;
         const r = reveals[i];
-        const card = document.querySelector(`.flip-card[data-side="${p.side}"][data-idx="${p.idx}"]`);
-        if (!card) return;
+        const side = i < teams.teamA.length ? 'a' : 'b';
+        const idx = i < teams.teamA.length ? i : i - teams.teamA.length;
+        const key = side + '_' + idx;
 
-        // Thêm flipped class nếu chưa có
+        const card = document.querySelector(`.flip-card[data-side="${side}"][data-idx="${idx}"]`);
+        if (!card) continue;
+
+        // Flip nếu chưa flip
         if (!card.classList.contains('flipped')) {
             card.classList.add('flipped');
             viewerPlayFlip();
+            // Cập nhật champ-reveal text
+            const revealEl = card.querySelector('.champ-reveal');
+            if (revealEl) revealEl.innerHTML = (r.championWarn ? '⚠️ ' : '') + (r.champion || '?');
         }
-
-        // Update champion img
-        const img = card.querySelector('.f-champ-img');
-        if (img && r.champion) img.src = heroImg(r.champion);
-
-        // Update champion name
-        const revealEl = card.querySelector('.champ-reveal');
-        if (revealEl) revealEl.innerHTML = (r.championWarn ? '⚠️ ' : '') + (r.champion || '?');
-
-        // Update hidden text
-        const hidden = card.querySelector('.champ-hidden-text');
-        if (hidden) hidden.innerHTML = (r.champion || '?') + (r.championWarn ? ' ⚠️' : '');
-    });
+    }
 }
 
-// ===== Viewer: Slot Machine — giống hệt host =====
+// ===== Viewer: Slot Machine =====
 function viewerRenderSlotMachine(data) {
     const content = $('viewerContent');
     const teams = data.teams;
     const reveals = data.reveals || [];
-    const revealMode = data.settings?.revealMode || 'slotMachine';
 
-    // Tạo order
     const order = [];
     [teams.teamA, teams.teamB].forEach((team, ti) => {
-        team.forEach((p, i) => order.push({ ...p, side: ti === 0 ? 'a' : 'b', idx: i }));
+        team.forEach((p, i) => order.push({ ...p, side: ti === 0 ? 'a' : 'b' }));
     });
     viewerCurrentOrder = order;
 
-    // Render slot frame + team lists (giống host)
-    let html = `
+    content.innerHTML = `
         <div class="slot-area">
             <div class="slot-frame" id="viewerSlotFrame">
                 <div class="sf-avatar" id="viewerSfAvatar">🎮</div>
@@ -594,20 +539,33 @@ function viewerRenderSlotMachine(data) {
             </div>
         </div>
     `;
-    content.innerHTML = html;
 
-    // Play animation cho các reveal đã có
+    // Replay reveals đã có
     order.forEach((p, i) => {
-        if (reveals[i] && !viewerSpinnersDone.has(i)) {
-            viewerPlaySpinForPlayer(p, i, reveals[i], true);
+        if (reveals[i]) {
+            viewerInstantReveal(i, reveals[i]);
         }
     });
 }
 
-// Quay 1 người (giống host, nhưng dùng data từ Firebase)
-function viewerPlaySpinForPlayer(p, index, revealData, instant) {
+function viewerUpdateSlotMachine(data) {
+    const reveals = data.reveals || [];
+    const order = viewerCurrentOrder;
+
+    order.forEach((p, i) => {
+        if (reveals[i] && !viewerSpinnersDone.has(i)) {
+            // Reveal mới → play animation
+            viewerSpinReveal(i, reveals[i]);
+        }
+    });
+}
+
+function viewerInstantReveal(index, revealData) {
     if (viewerSpinnersDone.has(index)) return;
     viewerSpinnersDone.add(index);
+
+    const p = viewerCurrentOrder[index];
+    if (!p) return;
 
     const champImgEl = $('viewerSfChampImg');
     const nameEl = $('viewerSfName');
@@ -615,20 +573,32 @@ function viewerPlaySpinForPlayer(p, index, revealData, instant) {
     const champNameEl = $('viewerSfChampName');
     const avatarEl = $('viewerSfAvatar');
 
-    // Hiển thị người đang quay (avatar thật)
+    avatarEl.innerHTML = avatarHtml(p.avatar);
+    nameEl.textContent = p.name;
+    roleEl.textContent = p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role;
+    champImgEl.src = heroImg(revealData.champion);
+    champNameEl.textContent = (revealData.championWarn ? '⚠️ ' : '') + (revealData.champion || '?');
+
+    viewerAppendRow(p, revealData);
+}
+
+function viewerSpinReveal(index, revealData) {
+    if (viewerSpinnersDone.has(index)) return;
+    viewerSpinnersDone.add(index);
+
+    const p = viewerCurrentOrder[index];
+    if (!p) return;
+
+    const champImgEl = $('viewerSfChampImg');
+    const nameEl = $('viewerSfName');
+    const roleEl = $('viewerSfRole');
+    const champNameEl = $('viewerSfChampName');
+    const avatarEl = $('viewerSfAvatar');
+
     avatarEl.innerHTML = avatarHtml(p.avatar);
     nameEl.textContent = p.name;
     roleEl.textContent = p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role;
 
-    if (instant) {
-        // Hiện kết quả ngay (cho các reveal đã có)
-        champImgEl.src = heroImg(revealData.champion);
-        champNameEl.textContent = (revealData.championWarn ? '⚠️ ' : '') + (revealData.champion || '?');
-        viewerAppendRow(p, revealData);
-        return;
-    }
-
-    // Animation quay (giống host)
     const allChamps = HEROES_DATA.map(h => h.name);
     const steps = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 150, 150, 150, 150, 150, 300, 300, 300];
     let stepIdx = 0;
@@ -639,11 +609,9 @@ function viewerPlaySpinForPlayer(p, index, revealData, instant) {
             champImgEl.src = heroImg(rnd);
             champNameEl.textContent = rnd;
             viewerPlayTick();
-            const delay = steps[stepIdx];
+            setTimeout(tick, steps[stepIdx]);
             stepIdx++;
-            setTimeout(tick, delay);
         } else {
-            // Dừng → hiện kết quả thật
             champImgEl.src = heroImg(revealData.champion);
             champNameEl.textContent = (revealData.championWarn ? '⚠️ ' : '') + (revealData.champion || '?');
             viewerAppendRow(p, revealData);
@@ -652,7 +620,6 @@ function viewerPlaySpinForPlayer(p, index, revealData, instant) {
     tick();
 }
 
-// Thêm row kết quả vào team list
 function viewerAppendRow(p, revealData) {
     const row = document.createElement('div');
     row.className = 'sr-row';

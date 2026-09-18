@@ -185,12 +185,15 @@ function getDeviceId() {
 const ADMIN_KEY_STORAGE = 'lq_admin_key';
 const ADMIN_KEY_HASH_KEY = 'lq_admin_hash';
 
-// Simple hash (djb2)
+// Hash key expected (Suthy0704@@)
+const EXPECTED_KEY_HASH = '9aab60ed'; // Suthy0704@@ hash by djb2
+
+// Simple hash (djb2) — unsigned
 function simpleHash(str) {
     let hash = 5381;
     for (let i = 0; i < str.length; i++) {
         hash = ((hash << 5) + hash) + str.charCodeAt(i);
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash >>> 0; // Convert to unsigned 32bit
     }
     return hash.toString(16);
 }
@@ -206,26 +209,32 @@ function verifyAdminKey(key) {
     return stored === simpleHash(key);
 }
 
-// Setup admin key (lần đầu)
+// Verify against expected key (hardcoded)
+function verifyExpectedKey(key) {
+    return simpleHash(key) === EXPECTED_KEY_HASH;
+}
+
+// Setup admin key (lần đầu — chỉ khi key khớp expected)
 function setupAdminKey(key) {
+    if (!verifyExpectedKey(key)) return false;
     localStorage.setItem(ADMIN_KEY_HASH_KEY, simpleHash(key));
+    return true;
 }
 
 // Đổi admin key
 function changeAdminKey(oldKey, newKey) {
     if (!verifyAdminKey(oldKey)) return false;
+    if (!verifyExpectedKey(newKey)) return false;
     localStorage.setItem(ADMIN_KEY_HASH_KEY, simpleHash(newKey));
     return true;
 }
 
-// Prompt admin key — chỉ xác minh, KHÔNG tự tạo mới
+// Prompt admin key — chỉ xác minh
 function ensureAdminKey() {
     if (!isAdminSetup()) {
-        // Chưa có ai setup key → từ chối
-        alert('⚠️ Admin key chưa được setup!\nChủ phòng phải setup key trước trên trình duyệt của họ.');
+        alert('⚠️ Admin key chưa được setup!\nBấm "Setup admin key" để bắt đầu.');
         return false;
     }
-    // Đã có key → yêu cầu nhập để xác minh
     const key = prompt('🔐 Nhập admin key:');
     if (!key) return false;
     if (!verifyAdminKey(key)) {
@@ -235,24 +244,20 @@ function ensureAdminKey() {
     return true;
 }
 
-// Setup admin key (chỉ gọi khi CHƯA có key)
+// Setup admin key (chỉ khi CHƯA có key và key khớp expected)
 function initialSetupAdminKey() {
     if (isAdminSetup()) {
         alert('Admin key đã được setup!');
         return;
     }
-    const key = prompt('🔐 SETUP ADMIN KEY\nNhập key lần đầu (ít nhất 4 ký tự):');
-    if (!key || key.length < 4) {
-        alert('Admin key phải ít nhất 4 ký tự!');
-        return;
-    }
-    const confirm = prompt('Xác nhận admin key:');
-    if (confirm !== key) {
-        alert('❌ Không khớp!');
+    const key = prompt('🔐 SETUP ADMIN KEY\nNhập admin key:');
+    if (!key) return;
+    if (!verifyExpectedKey(key)) {
+        alert('❌ Sai admin key!');
         return;
     }
     setupAdminKey(key);
-    alert('✅ Admin key đã được lưu! Bạn có thể tạo phiên Live.');
+    alert('✅ Admin key đã được lưu!');
 }
 
 // Host: tạo phiên live mới

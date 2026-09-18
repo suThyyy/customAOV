@@ -479,16 +479,16 @@ function viewerTeamColumnSecretBox(team, name, percent, side) {
                         <span class="f-question">?</span>
                     </div>
                     <div class="flip-face flip-back">
-                        <img class="f-champ-img" src="" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">
+                        ${p.champion ? `<img class="f-champ-img" src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'">` : `<span class="f-champ-free">🖐</span>`}
                     </div>
                 </div>
             </div>
             <div class="card-info">
                 <span class="f-name">${p.name}</span>
                 <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role}</span>
-                <span class="f-champ-name"><span class="champ-reveal">???</span></span>
+                <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
             </div>
-            <span class="champ-hidden-text hidden"></span>
+            ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
         </div>
     `).join('');
     return `<div class="team-col">

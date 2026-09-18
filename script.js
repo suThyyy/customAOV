@@ -181,8 +181,61 @@ function getDeviceId() {
     return id;
 }
 
+// ===== ADMIN KEY SYSTEM =====
+const ADMIN_KEY_STORAGE = 'lq_admin_key';
+const ADMIN_KEY_HASH_KEY = 'lq_admin_hash';
+
+// Simple hash (djb2)
+function simpleHash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash.toString(16);
+}
+
+// Kiểm tra admin key đã setup chưa
+function isAdminSetup() {
+    return localStorage.getItem(ADMIN_KEY_HASH_KEY) != null;
+}
+
+// Verify admin key
+function verifyAdminKey(key) {
+    const stored = localStorage.getItem(ADMIN_KEY_HASH_KEY);
+    return stored === simpleHash(key);
+}
+
+// Setup admin key (lần đầu)
+function setupAdminKey(key) {
+    localStorage.setItem(ADMIN_KEY_HASH_KEY, simpleHash(key));
+}
+
+// Đổi admin key
+function changeAdminKey(oldKey, newKey) {
+    if (!verifyAdminKey(oldKey)) return false;
+    localStorage.setItem(ADMIN_KEY_HASH_KEY, simpleHash(newKey));
+    return true;
+}
+
+// Prompt admin key nếu chưa setup
+function ensureAdminKey() {
+    if (isAdminSetup()) return true;
+    const key = prompt('🔐 Nhập admin key để sử dụng Live Share:\n(Nhập 1 lần, lưu vào trình duyệt)');
+    if (!key || key.length < 4) {
+        alert('Admin key phải ít nhất 4 ký tự!');
+        return false;
+    }
+    setupAdminKey(key);
+    alert('✅ Admin key đã được lưu!');
+    return true;
+}
+
 // Host: tạo phiên live mới
 async function createLiveSession() {
+    // Verify admin key
+    if (!ensureAdminKey()) return null;
+
     initFirebase();
     if (!db) return null;
 
@@ -1884,6 +1937,32 @@ function init() {
 
     try { sessionStorage.setItem('lq_lastResult', localStorage.getItem('lq_lastResult') || ''); } catch (e) {}
 }
+
+// Đổi admin key
+$('changeAdminKey').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!isAdminSetup()) {
+        alert('Chưa setup admin key. Hãy tạo phiên Live để setup.');
+        return;
+    }
+    const oldKey = prompt('Nhập admin key cũ:');
+    if (!oldKey || !verifyAdminKey(oldKey)) {
+        alert('❌ Sai admin key!');
+        return;
+    }
+    const newKey = prompt('Nhập admin key mới (ít nhất 4 ký tự):');
+    if (!newKey || newKey.length < 4) {
+        alert('Admin key phải ít nhất 4 ký tự!');
+        return;
+    }
+    const confirmKey = prompt('Xác nhận admin key mới:');
+    if (confirmKey !== newKey) {
+        alert('❌ Không khớp!');
+        return;
+    }
+    changeAdminKey(oldKey, newKey);
+    alert('✅ Đổi admin key thành công!');
+});
 
 // Cleanup: xóa phiên live khi host đóng trang
 window.addEventListener('beforeunload', () => {

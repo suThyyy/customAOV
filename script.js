@@ -362,18 +362,26 @@ function renderViewerSession(data) {
     const teamsChanged = newHash !== viewerTeamsHash;
     const modeChanged = newRevealMode !== viewerRevealMode && viewerRevealMode !== '';
 
-    if (teamsChanged || modeChanged) {
-        // Teams hoặc mode thay đổi → reset state và render lại
+    // Nếu mode thay đổi → force re-render
+    if (modeChanged) {
         viewerRendered = false;
         viewerFlippedCards.clear();
         viewerSpinnersDone.clear();
         viewerCurrentOrder = [];
-        viewerTeamsHash = newHash;
-        viewerRevealMode = newRevealMode;
     }
 
-    // Nếu đã render rồi và teams không đổi → chỉ update reveal
-    if (viewerRendered && !teamsChanged) {
+    if (teamsChanged) {
+        viewerRendered = false;
+        viewerFlippedCards.clear();
+        viewerSpinnersDone.clear();
+        viewerCurrentOrder = [];
+    }
+
+    viewerTeamsHash = newHash;
+    viewerRevealMode = newRevealMode;
+
+    // Nếu đã render rồi và không có gì thay đổi → chỉ update reveal
+    if (viewerRendered && !teamsChanged && !modeChanged) {
         if (revealMode === 'secretBox') {
             viewerUpdateFlippedCards(data);
             const allRevealed = data.reveals && data.reveals.length === (data.teams.teamA.length + data.teams.teamB.length) && data.reveals.every(r => r != null);
@@ -398,13 +406,14 @@ function renderViewerSession(data) {
     }
 
     // Lần đầu render HOẶC teams/mode thay đổi
-    viewerRendered = true;
-    viewerRevealMode = revealMode;
+    if (!viewerRendered) {
+        viewerRendered = true;
 
-    if (revealMode === 'secretBox') {
-        viewerRenderSecretBox(data);
-    } else {
-        viewerRenderSlotMachine(data);
+        if (revealMode === 'secretBox') {
+            viewerRenderSecretBox(data);
+        } else {
+            viewerRenderSlotMachine(data);
+        }
     }
 
     // Done

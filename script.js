@@ -1338,8 +1338,17 @@ function renderSlotMachine() {
     skipBtn.addEventListener('click', () => {
         if (skipped || finished) return;
         skipped = true;
-        // hiện hết phần còn lại ngay (appendRow tự chống trùng)
-        for (const p of order) appendRow(p);
+        // hiện hết phần còn lại ngay + sync Firebase
+        for (let i = 0; i < order.length; i++) {
+            const p = order[i];
+            appendRow(p);
+            if (isHost && currentSessionId) {
+                syncReveal(i, {
+                    name: p.name, role: p.role, champion: p.champion,
+                    championWarn: p.championWarn, side: p.side
+                });
+            }
+        }
         finish();
     });
 
@@ -1571,7 +1580,27 @@ resultArea.addEventListener('click', (e) => {
     if (e.target.id === 'copyBtn') {
         navigator.clipboard.writeText(buildCopyText()).then(() => alert('📋 Đã copy!')).catch(() => alert('Không copy được'));
     } else if (e.target.id === 'revealAllBtn') {
-        document.querySelectorAll('.flip-card').forEach(c => { if (!c.classList.contains('flipped')) { c.classList.add('flipped'); revealChampName(c); playFlip(); } });
+        document.querySelectorAll('.flip-card').forEach(c => {
+            if (!c.classList.contains('flipped')) {
+                c.classList.add('flipped');
+                revealChampName(c);
+                playFlip();
+                // Live sync: push reveal cho từng card
+                if (isHost && currentSessionId) {
+                    const side = c.dataset.side;
+                    const idx = parseInt(c.dataset.idx);
+                    const team = side === 'a' ? currentResult.teamA : currentResult.teamB;
+                    const p = team[idx];
+                    if (p) {
+                        const globalIdx = side === 'a' ? idx : idx + currentResult.teamA.length;
+                        syncReveal(globalIdx, {
+                            name: p.name, role: p.role, champion: p.champion,
+                            championWarn: p.championWarn, side: side
+                        });
+                    }
+                }
+            }
+        });
     } else if (e.target.closest('.flip-card')) {
         const card = e.target.closest('.flip-card');
         if (card.classList.contains('flipped')) return;

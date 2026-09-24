@@ -1,5 +1,5 @@
 // ============================================================
-//  Bốc Team Liên Quân — script.js
+//  Bốc Team Liên Quân - script.js
 //  Thuật toán chính có comment tiếng Việt.
 // ============================================================
 
@@ -370,7 +370,7 @@ function joinLiveSession(sessionId) {
         const data = snap.val();
         if (!data) {
             $('viewerTitle').textContent = '❌ Phiên không tồn tại';
-            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Link không hợp lệ.</p>';
+            $('viewerContent').innerHTML = '<p class="viewer-message">Link không hợp lệ.</p>';
             sessionRef = null;
             return;
         }
@@ -379,7 +379,7 @@ function joinLiveSession(sessionId) {
         const viewerCount = data.viewers ? Object.keys(data.viewers).length : 0;
         if (viewerCount >= 20) {
             $('viewerTitle').textContent = '❌ Phiên đã đầy (tối đa 20 người xem)';
-            $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Vui lòng thử lại sau.</p>';
+            $('viewerContent').innerHTML = '<p class="viewer-message">Vui lòng thử lại sau.</p>';
             sessionRef = null;
             return;
         }
@@ -393,7 +393,7 @@ function joinLiveSession(sessionId) {
             const data = snap.val();
             if (!data) {
                 $('viewerTitle').textContent = '❌ Phiên đã kết thúc';
-                $('viewerContent').innerHTML = '<p style="text-align:center;color:var(--muted)">Phiên không còn tồn tại.</p>';
+                $('viewerContent').innerHTML = '<p class="viewer-message">Phiên không còn tồn tại.</p>';
                 viewerResetState();
                 return;
             }
@@ -475,7 +475,7 @@ function renderViewerSession(data) {
     if (data.expiresAt && Date.now() > data.expiresAt) {
         badge.hidden = true;
         title.textContent = '⏰ Phiên đã hết hạn';
-        content.innerHTML = '<p style="text-align:center;color:var(--muted)">Phiên đã hết hạn sau 1 giờ.</p>';
+        content.innerHTML = '<p class="viewer-message">Phiên đã hết hạn sau 1 giờ.</p>';
         viewerResetState();
         return;
     }
@@ -496,7 +496,7 @@ function renderViewerSession(data) {
             <div class="viewer-waiting">
                 <div class="spinner"></div>
                 <p>Phiên: <b>${data.sessionName || 'Live'}</b></p>
-                <p style="font-size:13px;margin-top:8px">Host đang chuẩn bị. Đợi chút...</p>
+                <p class="viewer-subtext">Host đang chuẩn bị. Đợi chút...</p>
             </div>
         `;
         return;
@@ -737,7 +737,7 @@ function viewerSpinReveal(index, revealData) {
 function viewerAppendRow(p, revealData) {
     const row = document.createElement('div');
     row.className = 'sr-row';
-    row.innerHTML = `<img src="${heroImg(revealData.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} — ${ROLE_LABELS[p.role] || 'Sub'} → ${revealData.champion || '?'}${revealData.championWarn ? ' ⚠️' : ''}</span>`;
+    row.innerHTML = `<img src="${heroImg(revealData.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} - ${ROLE_LABELS[p.role] || 'Sub'} → ${revealData.champion || '?'}${revealData.championWarn ? ' ⚠️' : ''}</span>`;
     const listEl = p.side === 'a' ? $('viewerSlotTeamA') : $('viewerSlotTeamB');
     if (listEl) listEl.appendChild(row);
 }
@@ -751,7 +751,7 @@ const TIER_COLORS = { 1: '#FFD700', 2: '#4ADE80', 3: '#94A3B8', 4: '#60A5FA', 5:
 const TIER_LABELS = { 1: 'Mâm 1 💪', 2: 'Mâm 2 🙂', 3: 'Mâm 3 🐣', 4: 'Mâm 4 🤡', 5: 'Mâm 5 🗿' };
 const DEFAULT_EMOJIS = ['🐸', '🐵', '🦍', '🐔', '🐹', '🦖'];
 
-// Bể tướng theo vị trí (mặc định, user đã tổng hợp — cover đủ 128 tướng)
+// Bể tướng theo vị trí (mặc định, user đã tổng hợp - cover đủ 128 tướng)
 const DEFAULT_ROLE_CHAMPIONS = {
     top: ["Biron","Mina","Toro","Maloch","Astrid","Wonder Woman","Richter","Florentino","Volkath","Allain","Tachi","Charlotte","Bolt Baron","Airi","Lữ Bố","Triệu Vân","Gildur","Arthur","Murad","Arduin","Ryoma","Superman","Xeniel","Kil'Groth","Omen","Roxie","Amily","Y'bneth","Veres","Yena","Ata","Dextra","Yan","Bijan","Qi","Edras","Tamyn","Omega","Zuka","Marja","Skud","Max","Errol","Taara","Wiro"],
     jungle: ["Butterfly","Nakroth","Astrid","Wonder Woman","Tulen","Volkath","Eland'orr","Keera","Paine","Bright","Aoi","Tachi","Charlotte","Billow","Airi","Triệu Vân","Zephys","Fennik","Ngộ Không","Kriknak","Kaine","Murad","Zill","Ryoma","The Flash","Rourke","Quillen","Sinestrea","Yan","Qi","Zuka","Lindis","Enzo","Thorne","Skud","Errol"],
@@ -760,7 +760,7 @@ const DEFAULT_ROLE_CHAMPIONS = {
     support: ["Thane","Mina","Toro","TeeMee","Richter","Sephera","Aya","Ming","Dolia","Dyadia","Chaugnar","Ormarr","Alice","Gildur","Grakk","Helen","Arduin","Xeniel","Baldum","Y'bneth","Zip","Krizzix","Ishar","Ata","Omega","Lumburr","Rouie","Cresht","Arum","Annette","Wiro"]
 };
 const TAGLINES = [
-    'Random 5v5 công bằng — hết cãi nhau nha 😤',
+    'Random 5v5 công bằng, hết cãi nhau nha 😤',
     'Đừng có gánh team nữa, để máy lo 🎲',
     'Top 1 gánh còng lưng, top 2 chuyên feed 🔥',
     'Bốc thăm 1 lần, đỡ đau đầu cả tuần 🧠',
@@ -873,7 +873,7 @@ function resizeImage(file, cb) {
 }
 
 function avatarHtml(avatar) {
-    return avatar ? `<img src="${avatar}" alt="">` : `<span style="font-size:16px">${DEFAULT_EMOJIS[rand(DEFAULT_EMOJIS.length)]}</span>`;
+    return avatar ? `<img src="${avatar}" alt="">` : `<span class="avatar-emoji">${DEFAULT_EMOJIS[rand(DEFAULT_EMOJIS.length)]}</span>`;
 }
 
 // ===== 8. Render player list =====
@@ -883,14 +883,16 @@ function renderPlayers() {
     playerCount.textContent = `(${activeCount}/${state.players.length} chơi)`;
     state.players.forEach((p) => {
         const color = TIER_COLORS[p.tier];
-        const chip = document.createElement('span');
+        const chip = document.createElement('div');
         chip.className = 'player-chip' + (p.active === false ? ' inactive' : '');
         chip.style.borderColor = color;
         chip.innerHTML = `
-            <span class="chip-avatar" data-edit="${p.id}">${avatarHtml(p.avatar)}</span>
-            <span class="chip-name">${p.name}</span>
-            <span class="chip-tier">${TIER_LABELS[p.tier]}</span>
-            <span class="remove" data-del="${p.id}">✕</span>
+            <button class="chip-avatar" data-edit="${p.id}" type="button" aria-label="Đổi ảnh của ${p.name}">${avatarHtml(p.avatar)}</button>
+            <button class="chip-main" data-toggle="${p.id}" type="button" aria-label="${p.name}, ${TIER_LABELS[p.tier]}. Bấm để ${p.active === false ? 'tham gia' : 'tạm nghỉ'}.">
+                <span class="chip-name">${p.name}</span>
+                <span class="chip-tier">${TIER_LABELS[p.tier]}</span>
+            </button>
+            <button class="remove" data-del="${p.id}" type="button" aria-label="Xóa ${p.name}">✕</button>
         `;
         chip.title = p.active === false ? 'Bấm để đánh dấu "đang chơi"' : 'Bấm để tắt (không chơi hôm nay)';
         playerList.appendChild(chip);
@@ -916,8 +918,10 @@ function renderHeroGrid() {
     const list = HEROES_DATA.filter(h => !q || h.name.toLowerCase().includes(q));
     heroGrid.innerHTML = '';
     list.forEach((h) => {
-        const card = document.createElement('div');
+        const card = document.createElement('button');
+        card.type = 'button';
         card.className = 'hero-card' + (selected.includes(h.name) ? ' selected' : '');
+        card.setAttribute('aria-pressed', selected.includes(h.name) ? 'true' : 'false');
         card.innerHTML = `<img src="${h.imgUrl}" alt="${h.name}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'"><div class="hero-name">${h.name}</div>`;
         card.addEventListener('click', () => toggleHero(h.name));
         heroGrid.appendChild(card);
@@ -958,7 +962,7 @@ function splitRandom(players) {
     return { teamA: shuffled.slice(0, sizeA), teamB: shuffled.slice(sizeA) };
 }
 
-// Sinh tổ hợp chọn k phần tử (đệ quy) — dùng cho brute-force cân tier
+// Sinh tổ hợp chọn k phần tử (đệ quy) - dùng cho brute-force cân tier
 function generateCombinations(arr, k) {
     const results = [];
     function helper(start, combo) {
@@ -1137,7 +1141,7 @@ function draw() {
         return;
     }
     if (active.length > 10) {
-        alert(`Còn ${active.length} người đang chơi (dư ${active.length - 10}) — bấm nút "🎯 Chọn 10 người chơi" trên khung thêm chiến hữu để loại bớt trước đã! 😅`);
+        alert(`Còn ${active.length} người đang chơi (dư ${active.length - 10}). Bấm nút "Chọn 10 người" để loại bớt trước.`);
         return;
     }
     doDraw(active);
@@ -1236,7 +1240,7 @@ function startElimination(players) {
         doDraw([...picked, ...remaining]);
     };
 
-    // Nếu người dùng đóng modal thoát early — vẫn ghi state nếu đã loại đủ
+    // Nếu người dùng đóng modal thoát early - vẫn ghi state nếu đã loại đủ
     $('elimModal').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) {
             commitIfDone();
@@ -1282,7 +1286,7 @@ function doDraw(players) {
         syncTeams(currentResult);
     }
 
-    // lưu kết quả vào localStorage (session — F5 không mất)
+    // lưu kết quả vào localStorage (session - F5 không mất)
     try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
 
     // chế độ "không bốc tướng" → không cần slot quay, luôn dùng Hộp Bí Ẩn (cho gọn)
@@ -1384,7 +1388,7 @@ function renderSlotMachine() {
         appended.add(p);
         const row = document.createElement('div');
         row.className = 'sr-row';
-        row.innerHTML = `<img src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} — ${ROLE_LABELS[p.role] || 'Sub'} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</span>`;
+        row.innerHTML = `<img src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} - ${ROLE_LABELS[p.role] || 'Sub'} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</span>`;
         (p.side === 'a' ? $('slotTeamA') : $('slotTeamB')).appendChild(row);
     };
 
@@ -1495,10 +1499,10 @@ function buildCopyText() {
     lines.push(`🎲 KẾT QUẢ BỐC TEAM`);
     lines.push('');
     lines.push(`🔵 ${r.nameA}${r.balance.teamA !== undefined ? ` (${r.balance.teamA}%)` : ''}`);
-    r.teamA.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
+    r.teamA.forEach((p, i) => lines.push(`${i + 1}. ${p.name} - ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
     lines.push('');
     lines.push(`🔴 ${r.nameB}${r.balance.teamB !== undefined ? ` (${r.balance.teamB}%)` : ''}`);
-    r.teamB.forEach((p, i) => lines.push(`${i + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
+    r.teamB.forEach((p, i) => lines.push(`${i + 1}. ${p.name} - ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}`));
     return lines.join('\n');
 }
 
@@ -1522,7 +1526,7 @@ function saveHistory() {
 
 function renderHistory() {
     historyList.innerHTML = '';
-    if (!state.history.length) { historyList.innerHTML = '<p style="color:var(--muted);font-size:13px">Chưa có lần bốc nào.</p>'; return; }
+    if (!state.history.length) { historyList.innerHTML = '<p class="history-empty">Chưa có lần bốc nào.</p>'; return; }
     state.history.forEach((h, i) => {
         const div = document.createElement('div');
         div.className = 'history-item';
@@ -1543,9 +1547,9 @@ function showHistoryModal(i) {
     $('modalTitle').textContent = `🔵 ${h.teamAName} vs 🔴 ${h.teamBName}`;
     let html = '';
     [['🔵 ' + h.teamAName, h.teamA], ['🔴 ' + h.teamBName, h.teamB]].forEach(([t, team]) => {
-        html += `<p style="font-weight:700;margin:8px 0 4px">${t}${h.balancePercent && h.balancePercent.teamA !== undefined ? '' : ''}</p>`;
+        html += `<p class="modal-team-title">${t}${h.balancePercent && h.balancePercent.teamA !== undefined ? '' : ''}</p>`;
         team.forEach((p, idx) => {
-            html += `<div style="font-size:13px;padding:3px 0">${idx + 1}. ${p.name} — ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</div>`;
+            html += `<div class="modal-player-line">${idx + 1}. ${p.name} - ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</div>`;
         });
     });
     $('modalBody').innerHTML = html;
@@ -1591,7 +1595,7 @@ addBtn.addEventListener('click', () => {
     if (state.players.length >= 30) { alert('Tối đa 30 thành viên thôi! 😅'); return; }
     state.players.push({ id: uid(), name, tier: Number(tierSelect.value), avatar: pendingAvatar, active: true });
     pendingAvatar = null;
-    avatarPreview.innerHTML = '😀';
+    avatarPreview.innerHTML = '+';
     nameInput.value = '';
     saveState();
     renderPlayers();
@@ -1622,6 +1626,10 @@ playerList.addEventListener('click', (e) => {
     } else if (e.target.closest('[data-edit]')) {
         editingAvatarId = e.target.closest('[data-edit]').dataset.edit;
         avatarInput.click();
+    } else if (e.target.closest('[data-toggle]')) {
+        const id = e.target.closest('[data-toggle]').dataset.toggle;
+        const p = state.players.find(x => x.id === id);
+        if (p) { p.active = p.active === false; saveState(); renderPlayers(); }
     } else if (e.target.closest('.player-chip')) {
         // bấm vào chip (không phải avatar/X) -> toggle đang chơi / nghỉ
         const id = e.target.closest('.player-chip').querySelector('[data-edit]').dataset.edit;
@@ -1638,7 +1646,8 @@ tierScoreGrid.addEventListener('input', (e) => {
 $('tierScoreToggle').addEventListener('click', () => {
     const g = tierScoreGrid;
     g.hidden = !g.hidden;
-    document.querySelector('.chev').style.transform = g.hidden ? 'rotate(0)' : 'rotate(180deg)';
+    $('tierScoreToggle').setAttribute('aria-expanded', String(!g.hidden));
+    document.querySelector('.chev').style.transform = g.hidden ? 'rotate(0)' : 'rotate(45deg)';
 });
 
 // Settings
@@ -1651,8 +1660,9 @@ $('soundToggle').addEventListener('change', () => { state.settings.soundEnabled 
 
 // Hero tabs + search
 document.querySelectorAll('.role-tab').forEach(tab => tab.addEventListener('click', () => {
-    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.role-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
     tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
     activeRole = tab.dataset.role;
     renderHeroGrid();
 }));
@@ -1789,12 +1799,12 @@ $('goLiveBtn').addEventListener('click', async () => {
     }
 
     $('goLiveBtn').disabled = true;
-    $('goLiveBtn').textContent = '⏳ Đang tạo...';
+    $('goLiveBtn').textContent = 'Đang tạo phiên...';
 
     const sessionId = await createLiveSession();
     if (!sessionId) {
         $('goLiveBtn').disabled = false;
-        $('goLiveBtn').textContent = '🔴 Tạo phiên Live';
+        $('goLiveBtn').textContent = 'Tạo phiên live';
         return;
     }
 
@@ -1834,7 +1844,7 @@ $('stopLiveBtn').addEventListener('click', () => {
     $('liveStatus').hidden = true;
     $('goLiveBtn').hidden = false;
     $('goLiveBtn').disabled = false;
-    $('goLiveBtn').textContent = '🔴 Tạo phiên Live';
+    $('goLiveBtn').textContent = 'Tạo phiên live';
 });
 
 // ===== 25. Init =====
@@ -1864,7 +1874,7 @@ async function loadDefaultMembers() {
             saveState();
             renderPlayers();
         }
-    } catch (e) { /* bỏ qua — mở local file thường bị chặn */ }
+    } catch (e) { /* bỏ qua - mở local file thường bị chặn */ }
 }
 
 // Cập nhật dòng trạng thái trước nút bốc thăm:多少人 đang chơi + đủ/chưa
@@ -1872,13 +1882,13 @@ function updateDrawStatus() {
     const active = state.players.filter(p => p.active !== false);
     const el = $('drawStatus');
     if (active.length === 10) {
-        el.textContent = `✅ Đã đủ 10 người chơi — bấm BỐC THĂM!`;
+        el.textContent = `Đã đủ 10 người chơi. Đội hình sẵn sàng.`;
         el.style.color = '#4ade80';
     } else if (active.length < 10) {
-        el.textContent = `Đang có ${active.length} người chơi — thiếu ${10 - active.length} (bấm chip để bật người)`;
+        el.textContent = `Đang có ${active.length} người chơi, còn thiếu ${10 - active.length}.`;
         el.style.color = '#fbbf24';
     } else {
-        el.textContent = `Đang có ${active.length} người chơi — dư ${active.length - 10} (bấm "🎯 Chọn 10 người chơi" ở trên)`;
+        el.textContent = `Đang có ${active.length} người chơi, đang dư ${active.length - 10}.`;
         el.style.color = '#f87171';
     }
     // nút bốc thăm chỉ sáng khi đủ
@@ -1922,6 +1932,7 @@ function init() {
     renderTierScore();
     renderHeroGrid();
     renderSettings();
+    document.querySelectorAll('.role-tab').forEach((tab) => tab.setAttribute('aria-selected', String(tab.classList.contains('active'))));
     renderHistory();
     loadDefaultMembers();
 

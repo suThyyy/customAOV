@@ -1,219 +1,147 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bốc Team Liên Quân 🎲</title>
+    <meta name="theme-color" content="#071018">
+    <meta name="description" content="Công cụ chia đội, phân lane và bốc tướng Liên Quân Mobile cho nhóm 5v5.">
+    <title>Đấu Trường Lập Đội | Liên Quân Mobile</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=6">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="assets/arena-battleground.png">
+    <link rel="stylesheet" href="css/style.css?v=7">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
-
 <body>
     <div class="app">
-        <!-- 3.1 Header -->
         <header class="header">
-            <h1>🎲 Bốc Team Liên Quân</h1>
-            <p class="tagline" id="tagline">Loading...</p>
+            <div class="brand-lockup">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <div>
+                    <h1>Đấu Trường Lập Đội</h1>
+                    <p>Liên Quân Mobile / Team Randomizer</p>
+                </div>
+            </div>
+            <p class="tagline" id="tagline">Đang chuẩn bị đấu trường...</p>
         </header>
-
-        <!-- 3.2 Thêm người chơi -->
-        <section class="panel">
-            <h2>👥 Thêm chiến hữu <span class="count" id="playerCount">
-                </span>
-                <button id="pickTenBtn" class="ghost-btn pick-ten-btn" type="button">🎯 Chọn 10 người chơi</button>
-            </h2>
-            <div class="add-row">
-                <div class="avatar-preview" id="avatarPreview">😀</div>
-                <input type="text" id="nameInput" placeholder="Nhập tên..." maxlength="20">
-                <select id="tierSelect" aria-label="Chọn mâm"></select>
-                <button id="avatarBtn" type="button" title="Upload ảnh đại diện">🖼️</button>
-                <input type="file" id="avatarInput" accept="image/*" hidden>
-                <button id="addBtn" type="button">Thêm</button>
-            </div>
-            <div id="playerList" class="player-list"></div>
-        </section>
-
-        <!-- 3.4 Panel chỉnh Tier Score -->
-        <section class="panel">
-            <button class="collapsible" id="tierScoreToggle" type="button">⚙️ Chỉnh điểm sức mạnh mâm <span class="chev">▾</span></button>
-            <div class="tier-score-grid" id="tierScoreGrid" hidden></div>
-        </section>
-
-        <!-- 3.5 Chọn chế độ -->
-        <section class="panel">
-            <h2>⚙️ Chọn chế độ</h2>
-
-            <div class="setting-row">
-                <span class="setting-label">Chia team</span>
-                <div class="radio-group" id="teamModeGroup">
-                    <label class="radio"><input type="radio" name="teamMode" value="random">🎲 Random hoàn toàn</label>
-                    <label class="radio"><input type="radio" name="teamMode" value="tier">⚖️ Cân theo Tier</label>
+        <main class="workspace">
+            <aside class="control-rail" aria-label="Cấu hình trận đấu">
+                <div class="rail-heading"><span>Thiết lập trận đấu</span><span class="rail-index">5V5</span></div>
+                <section class="panel player-panel">
+                    <div class="section-heading">
+                        <div><span class="section-kicker">Đội hình</span><h2>Danh sách chiến hữu <span class="count" id="playerCount"></span></h2></div>
+                        <button id="pickTenBtn" class="ghost-btn pick-ten-btn" type="button">Chọn 10 người</button>
+                    </div>
+                    <div class="add-row">
+                        <div class="avatar-preview" id="avatarPreview" aria-hidden="true">+</div>
+                        <label class="sr-only" for="nameInput">Tên người chơi</label>
+                        <input type="text" id="nameInput" placeholder="Tên người chơi" maxlength="20" autocomplete="off">
+                        <label class="sr-only" for="tierSelect">Chọn mâm</label>
+                        <select id="tierSelect" aria-label="Chọn mâm"></select>
+                        <button id="avatarBtn" class="icon-btn" type="button" title="Tải ảnh đại diện" aria-label="Tải ảnh đại diện">Ảnh</button>
+                        <input type="file" id="avatarInput" accept="image/*" hidden>
+                        <button id="addBtn" type="button">Thêm</button>
+                    </div>
+                    <div id="playerList" class="player-list" aria-live="polite"></div>
+                </section>
+                <section class="panel compact-panel">
+                    <button class="collapsible" id="tierScoreToggle" type="button" aria-expanded="false" aria-controls="tierScoreGrid"><span>Điểm sức mạnh theo mâm</span><span class="chev" aria-hidden="true">+</span></button>
+                    <div class="tier-score-grid" id="tierScoreGrid" hidden></div>
+                </section>
+                <section class="panel settings-panel">
+                    <div class="section-heading"><div><span class="section-kicker">Luật chia</span><h2>Cấu hình bốc thăm</h2></div></div>
+                    <fieldset class="setting-row"><legend class="setting-label">Chia team</legend><div class="radio-group" id="teamModeGroup">
+                        <label class="radio"><input type="radio" name="teamMode" value="random"><span>Random hoàn toàn</span></label>
+                        <label class="radio"><input type="radio" name="teamMode" value="tier"><span>Cân theo tier</span></label>
+                    </div></fieldset>
+                    <fieldset class="setting-row"><legend class="setting-label">Gán vị trí</legend><div class="radio-group" id="roleModeGroup">
+                        <label class="radio"><input type="radio" name="roleMode" value="random"><span>Random vị trí</span></label>
+                        <label class="radio"><input type="radio" name="roleMode" value="skip"><span>Tự chọn lane</span></label>
+                    </div></fieldset>
+                    <fieldset class="setting-row"><legend class="setting-label">Gán tướng</legend><div class="radio-group" id="championModeGroup">
+                        <label class="radio"><input type="radio" name="championMode" value="skip"><span>Tự chọn tướng</span></label>
+                        <label class="radio"><input type="radio" name="championMode" value="full"><span>Random toàn bể</span></label>
+                        <label class="radio"><input type="radio" name="championMode" value="byRole"><span>Đúng vị trí</span></label>
+                    </div></fieldset>
+                    <fieldset class="setting-row" id="balanceRow"><legend class="setting-label">Độ cân bằng</legend><div class="radio-group" id="balanceGroup">
+                        <label class="radio"><input type="radio" name="balanceLevel" value="50-50"><span>50-50</span></label>
+                        <label class="radio"><input type="radio" name="balanceLevel" value="60-40"><span>60-40</span></label>
+                        <label class="radio"><input type="radio" name="balanceLevel" value="70-30"><span>70-30</span></label>
+                    </div></fieldset>
+                    <fieldset class="setting-row"><legend class="setting-label">Hiện kết quả</legend><div class="radio-group" id="revealGroup">
+                        <label class="radio"><input type="radio" name="revealMode" value="secretBox"><span>Hộp bí ẩn</span></label>
+                        <label class="radio"><input type="radio" name="revealMode" value="slotMachine"><span>Vòng quay số phận</span></label>
+                    </div></fieldset>
+                    <div class="setting-row sound-row"><span class="setting-label">Âm thanh</span><label class="switch"><input type="checkbox" id="soundToggle" aria-label="Bật hoặc tắt âm thanh"><span class="slider"></span></label></div>
+                </section>
+                <section class="panel champion-panel">
+                    <div class="section-heading"><div><span class="section-kicker">Bể tướng</span><h2>Chọn theo vị trí</h2></div><button id="resetPoolBtn" class="ghost-btn reset-btn" type="button">Khôi phục</button></div>
+                    <p class="pool-hint">Chọn tướng cho vị trí đang mở. Thiết lập này chỉ dùng khi bốc tướng đúng vị trí. Đã chọn <b id="poolCount">0</b>.</p>
+                    <div class="role-tabs" id="roleTabs" role="tablist" aria-label="Vị trí thi đấu">
+                        <button class="role-tab active" data-role="top" type="button" role="tab">Đường trên</button>
+                        <button class="role-tab" data-role="jungle" type="button" role="tab">Đi rừng</button>
+                        <button class="role-tab" data-role="mid" type="button" role="tab">Đường giữa</button>
+                        <button class="role-tab" data-role="adc" type="button" role="tab">Xạ thủ</button>
+                        <button class="role-tab" data-role="support" type="button" role="tab">Trợ thủ</button>
+                    </div>
+                    <label class="sr-only" for="heroSearch">Tìm tướng</label>
+                    <input type="search" id="heroSearch" class="hero-search" placeholder="Tìm tướng..." autocomplete="off">
+                    <p class="warn" id="poolWarn" hidden>Vị trí này có ít hơn 2 tướng.</p>
+                    <div class="hero-grid" id="heroGrid"></div>
+                </section>
+                <section class="panel history-panel">
+                    <div class="history-head"><div><span class="section-kicker">Nhật ký</span><h2>Lịch sử bốc thăm</h2></div><button id="clearHistory" class="ghost-btn" type="button">Xóa hết</button></div>
+                    <div id="historyList" class="history-list"></div>
+                </section>
+                <section class="panel live-panel" id="liveSection">
+                    <div class="section-heading"><div><span class="section-kicker live-kicker">Phát trực tiếp</span><h2>Live Share</h2></div></div>
+                    <p class="live-hint">Tạo phiên live để bạn bè theo dõi kết quả theo thời gian thực.</p>
+                    <button id="goLiveBtn" class="live-start-btn" type="button">Tạo phiên live</button>
+                    <div id="liveStatus" hidden>
+                        <div class="live-info"><span class="live-badge">LIVE</span><span id="liveLinkText" class="live-link-text"></span></div>
+                        <div class="live-actions"><button id="copyLiveLink" type="button">Sao chép link</button><button id="stopLiveBtn" class="redraw-btn" type="button">Kết thúc</button></div>
+                    </div>
+                    <div class="admin-links"><a href="#" id="setupAdminKey">Thiết lập admin key</a><a href="#" id="changeAdminKey">Đổi key</a></div>
+                </section>
+                <section class="panel data-panel">
+                    <div class="section-heading"><div><span class="section-kicker">Lưu trữ</span><h2>Dữ liệu đội hình</h2></div></div>
+                    <div class="io-row">
+                        <button id="exportBtn" class="io-btn" type="button">Xuất dữ liệu</button>
+                        <button id="importBtn" class="io-btn" type="button">Nhập dữ liệu</button>
+                        <button id="exportMembersBtn" class="io-btn" type="button">Xuất members.json</button>
+                        <input type="file" id="importInput" accept=".json,application/json" hidden>
+                    </div>
+                    <p class="io-hint">Để đồng đội thấy danh sách mặc định, ghi đè <b>data/members.json</b> trong repo rồi push lên GitHub.</p>
+                </section>
+            </aside>
+            <section class="arena-stage" aria-label="Kết quả bốc thăm">
+                <div class="stage-topline"><span>Phòng đấu 5V5</span><span>10 người / 2 đội / 5 vị trí</span></div>
+                <div class="stage-intro">
+                    <div class="stage-emblem" aria-hidden="true"></div>
+                    <p class="stage-label">Đội hình đang chờ</p>
+                    <h2>Sẵn sàng chia đội</h2>
+                    <p>Hoàn tất cấu hình bên trái, kiểm tra đủ 10 người rồi bắt đầu bốc thăm.</p>
                 </div>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">Gán vị trí</span>
-                <div class="radio-group" id="roleModeGroup">
-                    <label class="radio"><input type="radio" name="roleMode" value="random">⚔️ Random vị trí</label>
-                    <label class="radio"><input type="radio" name="roleMode" value="skip">🚫 Không gán (tự chọn lane)</label>
+                <section id="resultArea" class="result-area" hidden></section>
+                <div class="draw-console">
+                    <p class="draw-status" id="drawStatus" aria-live="polite"></p>
+                    <div class="draw-actions">
+                        <button id="drawBtn" class="draw-btn" type="button"><span>Bốc thăm đội hình</span></button>
+                        <button id="redrawBtn" class="redraw-btn" type="button">Bốc lại</button>
+                        <button id="reloadDataBtn" class="redraw-btn" type="button" hidden>Tải lại dữ liệu gốc</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">Gán tướng</span>
-                <div class="radio-group" id="championModeGroup">
-                    <label class="radio"><input type="radio" name="championMode" value="skip">🚫 Không bốc tướng (tự chọn)</label>
-                    <label class="radio"><input type="radio" name="championMode" value="full">🎰 Random toàn bể</label>
-                    <label class="radio"><input type="radio" name="championMode" value="byRole">🎯 Đúng vị trí</label>
-                </div>
-            </div>
-
-            <div class="setting-row" id="balanceRow">
-                <span class="setting-label">Độ cân bằng</span>
-                <div class="radio-group" id="balanceGroup">
-                    <label class="radio"><input type="radio" name="balanceLevel" value="50-50">50-50</label>
-                    <label class="radio"><input type="radio" name="balanceLevel" value="60-40">60-40</label>
-                    <label class="radio"><input type="radio" name="balanceLevel" value="70-30">70-30</label>
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">Cách hiện kết quả</span>
-                <div class="radio-group" id="revealGroup">
-                    <label class="radio"><input type="radio" name="revealMode" value="secretBox">📦 Hộp Bí Ẩn</label>
-                    <label class="radio"><input type="radio" name="revealMode" value="slotMachine">🎡 Vòng Quay Số Phận</label>
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">Âm thanh</span>
-                <label class="switch">
-                    <input type="checkbox" id="soundToggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </section>
-
-        <!-- 3.6 Chọn bể tướng theo vị trí -->
-        <section class="panel">
-            <h2>📜 Bể tướng theo vị trí
-                <button id="resetPoolBtn" class="ghost-btn reset-btn" type="button">↺ Mặc định</button>
-            </h2>
-            <p class="pool-hint">Bấm vào tướng để <b>tick ✓</b> cho bể của vị trí đang mở (chỉ dùng ở chế độ "🎯 Đúng vị trí"). Đang chọn: <b id="poolCount">0</b> tướng.</p>
-            <div class="role-tabs" id="roleTabs">
-                <button class="role-tab active" data-role="top" type="button">⚔️ Đường Trên</button>
-                <button class="role-tab" data-role="jungle" type="button">🌲 Đi Rừng</button>
-                <button class="role-tab" data-role="mid" type="button">🔮 Đường Giữa</button>
-                <button class="role-tab" data-role="adc" type="button">🏹 Xạ Thủ</button>
-                <button class="role-tab" data-role="support" type="button">🛡️ Trợ Thủ</button>
-            </div>
-            <input type="text" id="heroSearch" class="hero-search" placeholder="🔍 Tìm tướng...">
-            <p class="warn" id="poolWarn" hidden>⚠️ Vị trí này có ít hơn 2 tướng, nên thêm thêm!</p>
-            <div class="hero-grid" id="heroGrid"></div>
-        </section>
-
-        <!-- 3.7 Nút hành động -->
-        <p class="draw-status" id="drawStatus"></p>
-        <button id="drawBtn" class="draw-btn" type="button">🎲 BỐC THĂM 🎲</button>
-        <button id="redrawBtn" class="redraw-btn" type="button">🔄 Bốc lại</button>
-        <button id="reloadDataBtn" class="redraw-btn" type="button" hidden>↺ Tải lại data gốc từ repo</button>
-
-        <!-- 3.8 Kết quả -->
-        <section id="resultArea" class="result-area" hidden></section>
-
-        <!-- 3.9 Lịch sử -->
-        <section class="panel">
-            <div class="history-head">
-                <h2>🕘 Lịch sử bốc thăm</h2>
-                <button id="clearHistory" class="ghost-btn" type="button">Xóa hết</button>
-            </div>
-            <div id="historyList" class="history-list"></div>
-        </section>
-
-        <!-- 3.11 Live Share -->
-<section class="panel" id="liveSection">
-    <h2>🔴 Live Share</h2>
-    <p class="live-hint">Tạo phiên live để bạn bè xem bạn bốc thăm real-time qua link.</p>
-    <button id="goLiveBtn" class="draw-btn" type="button" style="background:linear-gradient(135deg,#ef4444,#dc2626);font-size:16px;">🔴 Tạo phiên Live</button>
-    <div id="liveStatus" hidden>
-        <div class="live-info">
-            <span class="live-badge">🔴 LIVE</span>
-            <span id="liveLinkText" class="live-link-text"></span>
-        </div>
-        <div class="live-actions">
-            <button id="copyLiveLink" type="button">📋 Copy link</button>
-            <button id="stopLiveBtn" class="redraw-btn" type="button">⏹️ Kết thúc</button>
-        </div>
+            </section>
+        </main>
     </div>
-    <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-        <a href="#" id="setupAdminKey" style="color:var(--muted);text-decoration:underline">🔑 Setup admin key</a> · 
-        <a href="#" id="changeAdminKey" style="color:var(--muted);text-decoration:underline">Đổi key</a>
-    </div>
-</section>
-
-        <!-- 3.10 Xuất / Nhập -->
-        <section class="panel">
-            <h2>💾 Dữ liệu</h2>
-            <div class="io-row">
-                <button id="exportBtn" class="io-btn" type="button">📤 Xuất dữ liệu</button>
-                <button id="importBtn" class="io-btn" type="button">📥 Nhập dữ liệu</button>
-                <button id="exportMembersBtn" class="io-btn" type="button">👥 Xuất members.json</button>
-                <input type="file" id="importInput" accept=".json,application/json" hidden>
-            </div>
-            <p class="io-hint">Muốn bạn bè vào là thấy danh sách team? Bấm "👥 Xuất members.json" rồi bỏ file vào thư mục <b>data/</b> trong repo (ghi đè file cũ) → push lên GitHub.</p>
-        </section>
-    </div>
-
-    <!-- Modal xem lại lịch sử -->
-    <div class="modal hidden" id="historyModal">
-        <div class="modal-box">
-            <h3 id="modalTitle"></h3>
-            <div id="modalBody"></div>
-            <button class="ghost-btn" id="modalClose" type="button">Đóng</button>
-        </div>
-    </div>
-
-    <!-- Modal loại người (khi > 10 người muốn chơi) -->
-    <div class="modal hidden" id="elimModal">
-        <div class="modal-box">
-            <h3>😱 Chọn người... BỊ LOẠI!</h3>
-            <p class="elim-sub">Có <b id="elimCount"></b> người muốn chơi, cần loại <b id="elimNeed"></b> người. Số phận định đoạt... 🎰</p>
-            <div id="elimGrid" class="elim-grid"></div>
-            <button id="elimDoneBtn" class="ghost-btn" type="button" hidden>🎲 Bắt đầu bốc thăm!</button>
-        </div>
-    </div>
-
-<!-- Modal link chia sẻ live -->
-<div class="modal hidden" id="liveModal">
-    <div class="modal-box">
-        <h3>🔴 Link xem Live</h3>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:8px">Chia sẻ link này để bạn bè xem bạn bốc thăm real-time:</p>
-        <input type="text" id="liveLinkInput" readonly class="live-link-input">
-        <div style="margin-top:12px;display:flex;gap:8px">
-            <button id="copyLiveLinkBtn" type="button">📋 Copy link</button>
-            <button class="ghost-btn" id="liveModalClose" type="button">Đóng</button>
-        </div>
-    </div>
-</div>
-
+    <div class="modal hidden" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-box"><h3 id="modalTitle"></h3><div id="modalBody"></div><button class="ghost-btn" id="modalClose" type="button">Đóng</button></div></div>
+    <div class="modal hidden" id="elimModal" role="dialog" aria-modal="true" aria-labelledby="elimTitle"><div class="modal-box"><h3 id="elimTitle">Chọn người bị loại</h3><p class="elim-sub">Có <b id="elimCount"></b> người muốn chơi, cần loại <b id="elimNeed"></b> người. Số phận định đoạt.</p><div id="elimGrid" class="elim-grid"></div><button id="elimDoneBtn" class="ghost-btn" type="button" hidden>Bắt đầu bốc thăm</button></div></div>
+    <div class="modal hidden" id="liveModal" role="dialog" aria-modal="true" aria-labelledby="liveModalTitle"><div class="modal-box"><h3 id="liveModalTitle">Link xem live</h3><p class="modal-copy">Chia sẻ link này để bạn bè xem phiên bốc thăm theo thời gian thực.</p><input type="text" id="liveLinkInput" readonly class="live-link-input" aria-label="Link xem live"><div class="modal-actions"><button id="copyLiveLinkBtn" type="button">Sao chép link</button><button class="ghost-btn" id="liveModalClose" type="button">Đóng</button></div></div></div>
     <audio id="spinMusic" src="nhac-xo-so.mp3" loop preload="auto"></audio>
-
-<!-- Viewer mode (shown when ?live= parameter detected) -->
-<section id="viewerArea" class="viewer-area" hidden>
-    <div class="viewer-header">
-        <h2 id="viewerTitle">🔴 Đang kết nối phiên live...</h2>
-        <span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span>
-    </div>
-    <div id="viewerContent" class="viewer-content"></div>
-</section>
-
-    <script src="script.js?v=6"></script>
+    <section id="viewerArea" class="viewer-area" hidden><div class="viewer-header"><div><span class="section-kicker">Theo dõi trực tiếp</span><h2 id="viewerTitle">Đang kết nối phiên live...</h2></div><span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span></div><div id="viewerContent" class="viewer-content"></div></section>
+    <script src="script.js?v=7"></script>
 </body>
-
 </html>

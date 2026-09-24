@@ -764,7 +764,7 @@ const TAGLINES = [
     'Đừng có gánh team nữa, để máy lo 🎲',
     'Top 1 gánh còng lưng, top 2 chuyên feed 🔥',
     'Bốc thăm 1 lần, đỡ đau đầu cả tuần 🧠',
-    'Cân tier chuẩn chỉnh, ai cũng có cửa carry 💪',
+    'Cân mâm chuẩn chỉnh, ai cũng có cửa carry 💪',
     'May mắn hay định mệnh? Bấm là biết 🎰',
 ];
 const TINH_TU = ['Gánh Còng Lưng', 'Không Biết Sợ', 'Chuyên Feed', 'Bất Tử', 'Toxic Vui Vẻ', 'Cày Cuốc', 'Lụi Bụi', 'Try Hard', 'Thánh AFK', 'Bá Đạo', 'Hack Não', 'Feed Lên Bờ'];

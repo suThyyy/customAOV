@@ -634,20 +634,41 @@ function viewerRenderSlotMachine(data) {
 
     content.innerHTML = `
         <div class="slot-area">
-            <div class="slot-frame" id="viewerSlotFrame">
-                <div class="sf-avatar" id="viewerSfAvatar">🎮</div>
-                <div class="sf-name" id="viewerSfName">Sẵn sàng...</div>
-                <div class="sf-role" id="viewerSfRole"></div>
-                <img class="sf-champ-img" id="viewerSfChampImg" alt="">
-                <div class="sf-champ-name" id="viewerSfChampName"></div>
+            <div class="slot-ceremony">
+                <div class="slot-frame" id="viewerSlotFrame">
+                    <span class="slot-kicker">Người chơi hiện tại</span>
+                    <div class="sf-photo-stage"><div class="sf-avatar" id="viewerSfAvatar">🎮</div></div>
+                    <div class="sf-player-caption">
+                        <div class="sf-name" id="viewerSfName">Sẵn sàng</div>
+                        <div class="sf-role" id="viewerSfRole">Đang chờ host</div>
+                    </div>
+                    <div class="slot-turn" id="viewerSlotTurn">0 / 10</div>
+                </div>
+                <div class="destiny-stage" id="viewerDestinyStage">
+                    <span class="slot-kicker">Vòng quay số phận</span>
+                    <div class="destiny-orbit" aria-hidden="true"></div>
+                    <div class="roulette-track" aria-hidden="true">
+                        <img class="roulette-card roulette-side roulette-far" alt="">
+                        <img class="roulette-card roulette-side" alt="">
+                        <div class="destiny-card">
+                            <span class="destiny-question">?</span>
+                            <img class="sf-champ-img" id="viewerSfChampImg" alt="Tướng đang được chọn">
+                        </div>
+                        <img class="roulette-card roulette-side" alt="">
+                        <img class="roulette-card roulette-side roulette-far" alt="">
+                    </div>
+                    <div class="sf-champ-name" id="viewerSfChampName">Đang chờ kết quả</div>
+                    <div class="destiny-controls"><span class="spin-status"><span class="spin-status-mark" aria-hidden="true"></span>Đồng bộ từ host</span></div>
+                </div>
             </div>
             <div class="slot-teams">
-                <div class="slot-team">
-                    <h4 class="slot-team-title">🔵 ${teams.nameA}${teams.balance?.teamA !== undefined ? ` (${teams.balance.teamA}%)` : ''}</h4>
+                <div class="slot-team team-a">
+                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">A</span><h4 class="slot-team-title">${teams.nameA}</h4>${teams.balance?.teamA !== undefined ? `<span class="slot-team-power">${teams.balance.teamA}% sức mạnh</span>` : ''}</div>
                     <div class="slot-team-list" id="viewerSlotTeamA"></div>
                 </div>
-                <div class="slot-team">
-                    <h4 class="slot-team-title">🔴 ${teams.nameB}${teams.balance?.teamB !== undefined ? ` (${teams.balance.teamB}%)` : ''}</h4>
+                <div class="slot-vs" aria-hidden="true">VS</div>
+                <div class="slot-team team-b">
+                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">B</span><h4 class="slot-team-title">${teams.nameB}</h4>${teams.balance?.teamB !== undefined ? `<span class="slot-team-power">${teams.balance.teamB}% sức mạnh</span>` : ''}</div>
                     <div class="slot-team-list" id="viewerSlotTeamB"></div>
                 </div>
             </div>
@@ -665,13 +686,14 @@ function viewerRenderSlotMachine(data) {
 function viewerUpdateSlotMachine(data) {
     const reveals = data.reveals || [];
     const order = viewerCurrentOrder;
+    const pending = order.map((p, i) => i).filter((i) => reveals[i] && !viewerSpinnersDone.has(i));
 
-    order.forEach((p, i) => {
-        if (reveals[i] && !viewerSpinnersDone.has(i)) {
-            // Reveal mới → play animation
-            viewerSpinReveal(i, reveals[i]);
-        }
-    });
+    // Host bấm bỏ qua sẽ gửi nhiều kết quả cùng lúc: hiển thị ngay để tránh 10 animation chồng nhau.
+    if (pending.length > 1) {
+        pending.forEach((i) => viewerInstantReveal(i, reveals[i]));
+        return;
+    }
+    if (pending.length === 1) viewerSpinReveal(pending[0], reveals[pending[0]]);
 }
 
 function viewerInstantReveal(index, revealData) {
@@ -690,8 +712,11 @@ function viewerInstantReveal(index, revealData) {
     avatarEl.innerHTML = avatarHtml(p.avatar);
     nameEl.textContent = p.name;
     roleEl.textContent = p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role;
+    $('viewerSlotTurn').textContent = `${String(index + 1).padStart(2, '0')} / ${viewerCurrentOrder.length}`;
     champImgEl.src = heroImg(revealData.champion);
     champNameEl.textContent = (revealData.championWarn ? '⚠️ ' : '') + (revealData.champion || '?');
+    $('viewerSlotFrame').className = 'slot-frame';
+    $('viewerDestinyStage').className = 'destiny-stage is-locked';
 
     viewerAppendRow(p, revealData);
 }
@@ -712,32 +737,54 @@ function viewerSpinReveal(index, revealData) {
     avatarEl.innerHTML = avatarHtml(p.avatar);
     nameEl.textContent = p.name;
     roleEl.textContent = p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role;
+    $('viewerSlotTurn').textContent = `${String(index + 1).padStart(2, '0')} / ${viewerCurrentOrder.length}`;
+    $('viewerSlotFrame').className = 'slot-frame is-spotlight';
+    $('viewerDestinyStage').className = 'destiny-stage is-waiting';
+    champImgEl.removeAttribute('src');
+    champNameEl.textContent = 'Đang chuẩn bị';
 
     const allChamps = HEROES_DATA.map(h => h.name);
+    const sideCards = [...document.querySelectorAll('#viewerContent .roulette-side')];
     const steps = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 150, 150, 150, 150, 150, 300, 300, 300];
     let stepIdx = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function tick() {
         if (stepIdx < steps.length) {
             const rnd = allChamps[Math.floor(Math.random() * allChamps.length)];
             champImgEl.src = heroImg(rnd);
             champNameEl.textContent = rnd;
+            sideCards.forEach((card) => { card.src = heroImg(allChamps[rand(allChamps.length)]); });
             viewerPlayTick();
             setTimeout(tick, steps[stepIdx]);
             stepIdx++;
         } else {
             champImgEl.src = heroImg(revealData.champion);
             champNameEl.textContent = (revealData.championWarn ? '⚠️ ' : '') + (revealData.champion || '?');
-            viewerAppendRow(p, revealData);
+            $('viewerSlotFrame').classList.remove('is-spinning');
+            $('viewerDestinyStage').classList.remove('is-spinning');
+            $('viewerSlotFrame').classList.add('is-locked');
+            $('viewerDestinyStage').classList.add('is-locked');
+            setTimeout(() => viewerAppendRow(p, revealData), reducedMotion ? 120 : 780);
         }
     }
-    tick();
+    setTimeout(() => {
+        $('viewerSlotFrame').classList.remove('is-spotlight');
+        $('viewerSlotFrame').classList.add('is-spinning');
+        $('viewerDestinyStage').classList.remove('is-waiting');
+        $('viewerDestinyStage').classList.add('is-spinning');
+        tick();
+    }, reducedMotion ? 120 : 650);
 }
 
 function viewerAppendRow(p, revealData) {
     const row = document.createElement('div');
-    row.className = 'sr-row';
-    row.innerHTML = `<img src="${heroImg(revealData.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} - ${ROLE_LABELS[p.role] || 'Sub'} → ${revealData.champion || '?'}${revealData.championWarn ? ' ⚠️' : ''}</span>`;
+    row.className = 'sr-row is-arriving';
+    row.innerHTML = `
+        <span class="sr-avatar">${avatarHtml(p.avatar)}</span>
+        <span class="sr-player"><strong>${p.name}</strong><small>${ROLE_LABELS[p.role] || 'Tự chọn vị trí'}</small></span>
+        <span class="sr-champion"><img src="${heroImg(revealData.champion)}" alt="${revealData.champion || 'Tướng'}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${revealData.champion || 'Tự chọn'}${revealData.championWarn ? ' ⚠️' : ''}</small></span>
+    `;
     const listEl = p.side === 'a' ? $('viewerSlotTeamA') : $('viewerSlotTeamB');
     if (listEl) listEl.appendChild(row);
 }
@@ -833,11 +880,30 @@ const drawBtn = $('drawBtn');
 const redrawBtn = $('redrawBtn');
 const resultArea = $('resultArea');
 const historyList = $('historyList');
+const railToggleBtn = $('railToggleBtn');
+const railCloseBtn = $('railCloseBtn');
 
 let activeRole = 'top';
 let pendingAvatar = null;      // ảnh đang preview trước khi Thêm
 let editingAvatarId = null;    // id player đang đổi ảnh
 let currentResult = null;      // kết quả đang hiển thị (để copy/lật hết)
+
+function setRailOpen(open) {
+    document.body.classList.toggle('rail-open', open);
+    railToggleBtn.setAttribute('aria-expanded', String(open));
+    if (open) railCloseBtn.focus({ preventScroll: true });
+}
+
+function setSlotFocus(enabled) {
+    document.body.classList.toggle('slot-focus-mode', enabled);
+    if (!enabled) setRailOpen(false);
+}
+
+railToggleBtn.addEventListener('click', () => setRailOpen(!document.body.classList.contains('rail-open')));
+railCloseBtn.addEventListener('click', () => setRailOpen(false));
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.body.classList.contains('rail-open')) setRailOpen(false);
+});
 
 // ===== 6. Tier select =====
 function renderTierSelect() {
@@ -850,21 +916,21 @@ function renderTierSelect() {
     }
 }
 
-// ===== 7. Avatar (resize qua canvas) =====
+// ===== 7. Avatar (resize qua canvas, giữ nguyên tỉ lệ ảnh) =====
 function resizeImage(file, cb) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-            const size = 200;
+            const maxEdge = 720;
+            const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
+            const width = Math.max(1, Math.round(img.width * scale));
+            const height = Math.max(1, Math.round(img.height * scale));
             const c = document.createElement('canvas');
-            c.width = size; c.height = size;
+            c.width = width; c.height = height;
             const ctx = c.getContext('2d');
-            const min = Math.min(img.width, img.height);
-            const sx = (img.width - min) / 2;
-            const sy = (img.height - min) / 2;
-            ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-            cb(c.toDataURL('image/jpeg', 0.7));
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, width, height);
+            cb(c.toDataURL('image/jpeg', 0.78));
         };
         img.onerror = () => alert('⚠️ Không đọc được ảnh');
         img.src = e.target.result;
@@ -1297,6 +1363,7 @@ function doDraw(players) {
 // ===== 18. Render Hộp Bí Ẩn =====
 function renderSecretBox() {
     const r = currentResult;
+    setSlotFocus(false);
     resultArea.hidden = false;
     resultArea.innerHTML = `
         <div class="teams-grid">
@@ -1343,6 +1410,8 @@ function teamColumnSecretBox(team, name, percent, side) {
 // ===== 19. Render Vòng Quay Số Phận =====
 function renderSlotMachine() {
     const r = currentResult;
+    setSlotFocus(true);
+    setRailOpen(false);
     resultArea.hidden = false;
     // Thứ tự quay: team A theo top→support, rồi team B
     const order = [];
@@ -1351,59 +1420,118 @@ function renderSlotMachine() {
     });
     resultArea.innerHTML = `
         <div class="slot-area">
-            <div class="slot-frame" id="slotFrame">
-                <div class="sf-avatar" id="sfAvatar"></div>
-                <div class="sf-name" id="sfName">Sẵn sàng...</div>
-                <div class="sf-role" id="sfRole"></div>
-                <img class="sf-champ-img" id="sfChampImg" alt="">
-                <div class="sf-champ-name" id="sfChampName"></div>
+            <div class="slot-ceremony">
+                <div class="slot-frame" id="slotFrame">
+                    <span class="slot-kicker">Người chơi hiện tại</span>
+                    <div class="sf-photo-stage">
+                        <div class="sf-avatar" id="sfAvatar"></div>
+                    </div>
+                    <div class="sf-player-caption">
+                        <div class="sf-name" id="sfName">Sẵn sàng</div>
+                        <div class="sf-role" id="sfRole">Đang chờ lượt quay</div>
+                    </div>
+                    <div class="slot-turn" id="slotTurn">0 / 10</div>
+                </div>
+                <div class="destiny-stage">
+                    <span class="slot-kicker">Vòng quay số phận</span>
+                    <div class="destiny-orbit" aria-hidden="true"></div>
+                    <div class="roulette-track" aria-hidden="true">
+                        <img class="roulette-card roulette-side roulette-far" alt="">
+                        <img class="roulette-card roulette-side" alt="">
+                        <div class="destiny-card">
+                            <span class="destiny-question">?</span>
+                            <img class="sf-champ-img" id="sfChampImg" alt="Tướng đang được chọn">
+                        </div>
+                        <img class="roulette-card roulette-side" alt="">
+                        <img class="roulette-card roulette-side roulette-far" alt="">
+                    </div>
+                    <div class="sf-champ-name" id="sfChampName">Đang chuẩn bị</div>
+                    <div class="destiny-controls">
+                        <span class="spin-status"><span class="spin-status-mark" aria-hidden="true"></span><span id="spinStatusText">Đang quay tướng</span></span>
+                        <button class="redraw-btn" id="skipBtn" type="button">Bỏ qua hiệu ứng</button>
+                    </div>
+                </div>
             </div>
             <div class="slot-teams">
-                <div class="slot-team">
-                    <h4 class="slot-team-title">🔵 ${r.nameA}${r.balance.teamA !== undefined ? ` (${r.balance.teamA}%)` : ''}</h4>
+                <div class="slot-team team-a">
+                    <div class="slot-team-heading">
+                        <span class="team-crest" aria-hidden="true">A</span>
+                        <h4 class="slot-team-title">${r.nameA}</h4>
+                        ${r.balance.teamA !== undefined ? `<span class="slot-team-power">${r.balance.teamA}% sức mạnh</span>` : ''}
+                    </div>
                     <div class="slot-team-list" id="slotTeamA"></div>
                 </div>
-                <div class="slot-team">
-                    <h4 class="slot-team-title">🔴 ${r.nameB}${r.balance.teamB !== undefined ? ` (${r.balance.teamB}%)` : ''}</h4>
+                <div class="slot-vs" aria-hidden="true">VS</div>
+                <div class="slot-team team-b">
+                    <div class="slot-team-heading">
+                        <span class="team-crest" aria-hidden="true">B</span>
+                        <h4 class="slot-team-title">${r.nameB}</h4>
+                        ${r.balance.teamB !== undefined ? `<span class="slot-team-power">${r.balance.teamB}% sức mạnh</span>` : ''}
+                    </div>
                     <div class="slot-team-list" id="slotTeamB"></div>
                 </div>
             </div>
-            ${actionBar()}
-            <button class="redraw-btn" id="skipBtn" type="button">⏩ Bỏ qua hiệu ứng, hiện hết ngay</button>
+            ${actionBar(true)}
         </div>
     `;
     const skipBtn = $('skipBtn');
     let skipped = false;
     let finished = false;
     const appended = new Set();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const spotlightPause = reducedMotion ? 120 : 650;
+    const resultHold = reducedMotion ? 120 : 780;
+    const transferTime = reducedMotion ? 0 : 220;
+    const nextPause = reducedMotion ? 80 : 340;
 
     const showFrame = (p) => {
         $('sfAvatar').innerHTML = avatarHtml(p.avatar);
         $('sfName').textContent = p.name;
         $('sfRole').textContent = (p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]);
+        $('slotTurn').textContent = `${String(order.indexOf(p) + 1).padStart(2, '0')} / ${order.length}`;
+        $('sfChampImg').removeAttribute('src');
+        $('sfChampName').textContent = 'Đang chuẩn bị';
+        $('slotFrame').className = 'slot-frame is-spotlight';
+        document.querySelector('.destiny-stage').className = 'destiny-stage is-waiting';
     };
 
     const appendRow = (p) => {
         if (appended.has(p)) return;
         appended.add(p);
         const row = document.createElement('div');
-        row.className = 'sr-row';
-        row.innerHTML = `<img src="${heroImg(p.champion)}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><span>${p.name} - ${ROLE_LABELS[p.role] || 'Sub'} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</span>`;
+        row.className = 'sr-row is-arriving';
+        row.innerHTML = `
+            <span class="sr-avatar">${avatarHtml(p.avatar)}</span>
+            <span class="sr-player"><strong>${p.name}</strong><small>${ROLE_LABELS[p.role] || 'Tự chọn vị trí'}</small></span>
+            <span class="sr-champion"><img src="${heroImg(p.champion)}" alt="${p.champion || 'Tướng'}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${p.champion || 'Tự chọn'}${p.championWarn ? ' ⚠️' : ''}</small></span>
+        `;
         (p.side === 'a' ? $('slotTeamA') : $('slotTeamB')).appendChild(row);
     };
 
     // Vòng quay 1 người: setTimeout đệ quy, tốc độ giảm dần
     function spinOne(p, pool, done) {
-        showFrame(p);
+        $('slotFrame').classList.remove('is-spotlight');
+        $('slotFrame').classList.add('is-spinning');
+        const destinyStage = document.querySelector('.destiny-stage');
+        destinyStage.classList.remove('is-waiting', 'is-locked', 'is-releasing');
+        destinyStage.classList.add('is-spinning');
+        const sideCards = [...document.querySelectorAll('.roulette-side')];
         const steps = [80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 150, 150, 150, 150, 150, 300, 300, 300];
         let stepIdx = 0;
         const champImgEl = $('sfChampImg');
         function tick() {
-            if (skipped) { champImgEl.src = heroImg(p.champion); $('sfChampName').textContent = p.champion + (p.championWarn ? ' ⚠️' : ''); done(); return; }
+            if (skipped) {
+                champImgEl.src = heroImg(p.champion);
+                $('sfChampName').textContent = p.champion + (p.championWarn ? ' ⚠️' : '');
+                $('slotFrame').classList.remove('is-spinning');
+                document.querySelector('.destiny-stage').classList.remove('is-spinning');
+                return;
+            }
             if (stepIdx < steps.length) {
                 const rnd = pool[rand(pool.length)];
                 champImgEl.src = heroImg(rnd);
                 $('sfChampName').textContent = rnd;
+                sideCards.forEach((card) => { card.src = heroImg(pool[rand(pool.length)]); });
                 playTick();
                 const delay = steps[stepIdx];
                 stepIdx++;
@@ -1411,7 +1539,19 @@ function renderSlotMachine() {
             } else {
                 champImgEl.src = heroImg(p.champion);
                 $('sfChampName').textContent = p.champion + (p.championWarn ? ' ⚠️' : '');
-                done();
+                $('slotFrame').classList.remove('is-spinning');
+                destinyStage.classList.remove('is-spinning');
+                destinyStage.classList.add('is-locked');
+                $('slotFrame').classList.add('is-locked');
+                setTimeout(() => {
+                    destinyStage.classList.add('is-releasing');
+                    $('slotFrame').classList.add('is-releasing');
+                    setTimeout(() => {
+                        destinyStage.classList.remove('is-locked', 'is-releasing');
+                        $('slotFrame').classList.remove('is-locked', 'is-releasing');
+                        done();
+                    }, transferTime);
+                }, resultHold);
             }
         }
         tick();
@@ -1428,25 +1568,32 @@ function renderSlotMachine() {
         if (skipped) return;
         if (i >= order.length) { finish(); return; }
         const p = order[i];
-        spinOne(p, poolFor(p), () => {
-            appendRow(p);
-            // Live sync: push reveal lên Firebase
-            if (isHost && currentSessionId) {
-                syncReveal(order.indexOf(p), {
-                    name: p.name,
-                    role: p.role,
-                    champion: p.champion,
-                    championWarn: p.championWarn,
-                    side: p.side
-                });
-            }
-            setTimeout(() => run(i + 1), 500);
-        });
+        showFrame(p);
+        setTimeout(() => {
+            if (skipped) return;
+            spinOne(p, poolFor(p), () => {
+                appendRow(p);
+                // Live sync: push reveal lên Firebase
+                if (isHost && currentSessionId) {
+                    syncReveal(order.indexOf(p), {
+                        name: p.name,
+                        role: p.role,
+                        champion: p.champion,
+                        championWarn: p.championWarn,
+                        side: p.side
+                    });
+                }
+                setTimeout(() => run(i + 1), nextPause);
+            });
+        }, spotlightPause);
     }
 
     function finish() {
         if (finished) return;
         finished = true;
+        document.querySelector('.slot-area').classList.add('is-complete');
+        $('spinStatusText').textContent = 'Hoàn tất đội hình';
+        skipBtn.hidden = true;
         stopSpinMusic();
         fireConfetti();
         playTada();
@@ -1477,10 +1624,10 @@ function renderSlotMachine() {
     run(0);
 }
 
-function actionBar() {
+function actionBar(slotMode = false) {
     return `<div class="action-bar">
         <button id="copyBtn" type="button">📋 Copy kết quả</button>
-        <button id="revealAllBtn" type="button">👁️ Lật tất cả</button>
+        ${slotMode ? '' : '<button id="revealAllBtn" type="button">👁️ Lật tất cả</button>'}
     </div>`;
 }
 

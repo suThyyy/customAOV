@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="assets/arena-battleground.png">
-    <link rel="stylesheet" href="css/style.css?v=7">
+    <link rel="stylesheet" href="css/style.css?v=10">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -28,8 +28,8 @@
             <p class="tagline" id="tagline">Đang chuẩn bị đấu trường...</p>
         </header>
         <main class="workspace">
-            <aside class="control-rail" aria-label="Cấu hình trận đấu">
-                <div class="rail-heading"><span>Thiết lập trận đấu</span><span class="rail-index">5V5</span></div>
+            <aside class="control-rail" id="controlRail" aria-label="Cấu hình trận đấu">
+                <div class="rail-heading"><span>Thiết lập trận đấu</span><span class="rail-index">5V5</span><button id="railCloseBtn" class="rail-close-btn" type="button" aria-label="Ẩn bảng cấu hình">Thu gọn</button></div>
                 <section class="panel player-panel">
                     <div class="section-heading">
                         <div><span class="section-kicker">Đội hình</span><h2>Danh sách chiến hữu <span class="count" id="playerCount"></span></h2></div>
@@ -118,7 +118,7 @@
                 </section>
             </aside>
             <section class="arena-stage" aria-label="Kết quả bốc thăm">
-                <div class="stage-topline"><span>Phòng đấu 5V5</span><span>10 người / 2 đội / 5 vị trí</span></div>
+                <div class="stage-topline"><span class="stage-room"><button id="railToggleBtn" class="rail-toggle-btn" type="button" aria-expanded="false" aria-controls="controlRail">Cấu hình</button><span>Phòng đấu 5V5</span></span><span>10 người / 2 đội / 5 vị trí</span></div>
                 <div class="stage-intro">
                     <div class="stage-emblem" aria-hidden="true"></div>
                     <p class="stage-label">Đội hình đang chờ</p>
@@ -142,6 +142,6 @@
     <div class="modal hidden" id="liveModal" role="dialog" aria-modal="true" aria-labelledby="liveModalTitle"><div class="modal-box"><h3 id="liveModalTitle">Link xem live</h3><p class="modal-copy">Chia sẻ link này để bạn bè xem phiên bốc thăm theo thời gian thực.</p><input type="text" id="liveLinkInput" readonly class="live-link-input" aria-label="Link xem live"><div class="modal-actions"><button id="copyLiveLinkBtn" type="button">Sao chép link</button><button class="ghost-btn" id="liveModalClose" type="button">Đóng</button></div></div></div>
     <audio id="spinMusic" src="nhac-xo-so.mp3" loop preload="auto"></audio>
     <section id="viewerArea" class="viewer-area" hidden><div class="viewer-header"><div><span class="section-kicker">Theo dõi trực tiếp</span><h2 id="viewerTitle">Đang kết nối phiên live...</h2></div><span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span></div><div id="viewerContent" class="viewer-content"></div></section>
-    <script src="script.js?v=7"></script>
+    <script src="script.js?v=8"></script>
 </body>
 </html>

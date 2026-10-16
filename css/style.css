@@ -91,6 +91,12 @@ button:hover:not(:disabled){border-color:var(--accent);background:#142a34}button
 
 /* Square spotlight frame: keep the complete photo visible inside a deliberate 1:1 stage. */
 .slot-frame::before{background:none}
+
+/* Phase 1 UX: make per-player skill editing visible without changing the data model. */
+.player-skill-select{width:92px;min-height:30px;padding:0 3px;border:1px solid var(--line);border-radius:var(--radius);background:#0a1720;color:var(--text);font-size:10px}
+.player-tier-select{width:58px}
+.mode-hint{margin:10px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+@media(max-width:460px){.player-skill-select{font-size:9px}.player-rank-select{width:78px}.player-tier-select{width:54px}}
 .slot-frame .sf-photo-stage{padding:40px 24px 92px;background:radial-gradient(circle at 50% 44%,rgba(82,199,201,.1),transparent 56%),#06111a}
 .slot-frame .sf-photo-stage .sf-avatar{width:min(76%,320px);height:auto;min-width:0;min-height:0;aspect-ratio:1;border:1px solid rgba(82,199,201,.72);border-radius:var(--radius);padding:5px;background:#071018;box-shadow:inset 0 0 0 1px rgba(236,244,244,.08),0 18px 48px rgba(0,0,0,.5)}
 .slot-frame .sf-photo-stage .sf-avatar img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:#030b12;filter:none;image-rendering:auto}

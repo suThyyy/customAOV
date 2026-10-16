@@ -574,6 +574,18 @@ test('legacy or imported state with Mâm 6-15 is rejected without remapping', ()
     assert.match(invalid.error, /Tier/);
 });
 
+test('player list exposes the active skill editor for tier and rank modes', () => {
+    const baseState = api.getState();
+    const player = { id: 'ux-player', name: 'UX Player', tier: 2, rankTier: rank.catalog[4].id, avatar: null, active: true };
+    api.setState({ ...baseState, players: [player], settings: { ...baseState.settings, teamMode: 'tier' } });
+    api.renderPlayers();
+    assert.match(elements.get('playerList').children.at(-1).innerHTML, /data-tier-for="ux-player"/);
+
+    api.setState({ ...baseState, players: [player], settings: { ...baseState.settings, teamMode: 'rank' } });
+    api.renderPlayers();
+    assert.match(elements.get('playerList').children.at(-1).innerHTML, /data-rank-for="ux-player"/);
+});
+
 test('Rank-Based split preserves configured decimal scores and fallback warning', () => {
     const input = players(10).map((player, index) => ({ ...player, rankTier: index === 0 ? 'chien-than' : 'dong-iii' }));
     setState({

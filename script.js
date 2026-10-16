@@ -1141,13 +1141,18 @@ function renderPlayers() {
         const chip = document.createElement('div');
         chip.className = 'player-chip' + (p.active === false ? ' inactive' : '');
         chip.style.borderColor = color;
+        const playerSkillControl = state.settings.teamMode === 'rank'
+            ? `<select class="player-skill-select player-rank-select" data-rank-for="${escapeHtml(p.id)}" aria-label="Rank của ${escapeHtml(p.name)}"><option value="">Chọn rank</option>${RANK_CATALOG.map((rank) => `<option value="${rank.id}"${p.rankTier === rank.id ? ' selected' : ''}>${escapeHtml(rank.label)}</option>`).join('')}</select>`
+            : state.settings.teamMode === 'tier'
+                ? `<select class="player-skill-select player-tier-select" data-tier-for="${escapeHtml(p.id)}" aria-label="Mâm của ${escapeHtml(p.name)}">${[1, 2, 3, 4, 5].map((tier) => `<option value="${tier}"${p.tier === tier ? ' selected' : ''}>${escapeHtml(TIER_LABELS[tier])}</option>`).join('')}</select>`
+                : '';
         chip.innerHTML = `
             <button class="chip-avatar" data-edit="${escapeHtml(p.id)}" type="button" aria-label="Đổi ảnh của ${escapeHtml(p.name)}">${avatarHtml(p.avatar)}</button>
             <button class="chip-main" data-toggle="${escapeHtml(p.id)}" type="button" aria-label="${escapeHtml(p.name)}, ${escapeHtml(TIER_LABELS[p.tier] || '')}. Bấm để ${p.active === false ? 'tham gia' : 'tạm nghỉ'}.">
                 <span class="chip-name">${escapeHtml(p.name)}</span>
                 <span class="chip-tier">${TIER_LABELS[p.tier]}</span>
             </button>
-            ${state.settings.teamMode === 'rank' ? `<select class="player-rank-select" data-rank-for="${escapeHtml(p.id)}" aria-label="Rank của ${escapeHtml(p.name)}"><option value="">Chọn rank</option>${RANK_CATALOG.map((rank) => `<option value="${rank.id}"${p.rankTier === rank.id ? ' selected' : ''}>${escapeHtml(rank.label)}</option>`).join('')}</select>` : ''}
+            ${playerSkillControl}
             <button class="remove" data-del="${escapeHtml(p.id)}" type="button" aria-label="Xóa ${escapeHtml(p.name)}">✕</button>
         `;
         chip.title = p.active === false ? 'Bấm để đánh dấu "đang chơi"' : 'Bấm để tắt (không chơi hôm nay)';
@@ -1221,8 +1226,14 @@ function renderSettings() {
     document.querySelectorAll('input[name="revealMode"]').forEach(r => r.checked = r.value === state.settings.revealMode);
     $('soundToggle').checked = state.settings.soundEnabled;
     const usesScores = state.settings.teamMode === 'tier' || state.settings.teamMode === 'rank';
+    $('scorePanel').hidden = !usesScores;
     $('balanceRow').style.opacity = usesScores ? '1' : '0.4';
     $('balanceRow').style.pointerEvents = usesScores ? 'auto' : 'none';
+    $('teamModeHint').textContent = state.settings.teamMode === 'random'
+        ? 'Chia ngẫu nhiên, không dùng điểm Mâm hoặc Rank.'
+        : state.settings.teamMode === 'rank'
+            ? 'Mỗi người chơi đang tham gia cần được chọn Rank trước khi bốc.'
+            : 'Dùng điểm Mâm hiện tại để tìm hai đội có tổng điểm gần nhau.';
     renderTierSelect();
     renderTierScore();
     renderPlayers();
@@ -1943,7 +1954,7 @@ playerList.addEventListener('click', (e) => {
         const id = e.target.closest('[data-toggle]').dataset.toggle;
         const p = state.players.find(x => x.id === id);
         if (p) { p.active = p.active === false; saveState(); renderPlayers(); }
-    } else if (e.target.closest('.player-chip')) {
+    } else if (e.target.closest('.player-chip') && !e.target.closest('select')) {
         // bấm vào chip (không phải avatar/X) -> toggle đang chơi / nghỉ
         const id = e.target.closest('.player-chip').querySelector('[data-edit]').dataset.edit;
         const p = state.players.find(x => x.id === id);
@@ -1953,6 +1964,17 @@ playerList.addEventListener('click', (e) => {
 
 playerList.addEventListener('change', (e) => {
     const playerId = e.target.dataset.rankFor;
+    const tierPlayerId = e.target.dataset.tierFor;
+    if (tierPlayerId) {
+        const player = state.players.find((item) => item.id === tierPlayerId);
+        const tier = Number(e.target.value);
+        if (player && Number.isInteger(tier) && tier >= 1 && tier <= 5) {
+            player.tier = tier;
+            saveState();
+            renderPlayers();
+        }
+        return;
+    }
     if (!playerId) return;
     const player = state.players.find((item) => item.id === playerId);
     if (!player) return;

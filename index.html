@@ -48,7 +48,8 @@
                     <div id="playerList" class="player-list" aria-live="polite"></div>
                 </section>
                 <section class="panel compact-panel">
-                    <button class="collapsible" id="tierScoreToggle" type="button" aria-expanded="false" aria-controls="tierScoreGrid"><span>Điểm sức mạnh theo mâm</span><span class="chev" aria-hidden="true">+</span></button>
+                    <button class="collapsible" id="tierScoreToggle" type="button" aria-expanded="false" aria-controls="tierScoreGrid"><span id="scorePanelTitle">Điểm sức mạnh theo mâm</span><span class="chev" aria-hidden="true">+</span></button>
+                    <button id="resetRankScoreBtn" class="ghost-btn reset-btn" type="button" hidden>Khôi phục điểm rank</button>
                     <div class="tier-score-grid" id="tierScoreGrid" hidden></div>
                 </section>
                 <section class="panel settings-panel">
@@ -56,6 +57,7 @@
                     <fieldset class="setting-row"><legend class="setting-label">Chia team</legend><div class="radio-group" id="teamModeGroup">
                         <label class="radio"><input type="radio" name="teamMode" value="random"><span>Random hoàn toàn</span></label>
                         <label class="radio"><input type="radio" name="teamMode" value="tier"><span>Cân theo mâm</span></label>
+                        <label class="radio"><input type="radio" name="teamMode" value="rank"><span>Cân theo Rank</span></label>
                     </div></fieldset>
                     <fieldset class="setting-row"><legend class="setting-label">Gán vị trí</legend><div class="radio-group" id="roleModeGroup">
                         <label class="radio"><input type="radio" name="roleMode" value="random"><span>Random vị trí</span></label>
@@ -142,6 +144,7 @@
     <div class="modal hidden" id="liveModal" role="dialog" aria-modal="true" aria-labelledby="liveModalTitle"><div class="modal-box"><h3 id="liveModalTitle">Link xem live</h3><p class="modal-copy">Chia sẻ link này để bạn bè xem phiên bốc thăm theo thời gian thực.</p><input type="text" id="liveLinkInput" readonly class="live-link-input" aria-label="Link xem live"><div class="modal-actions"><button id="copyLiveLinkBtn" type="button">Sao chép link</button><button class="ghost-btn" id="liveModalClose" type="button">Đóng</button></div></div></div>
     <audio id="spinMusic" src="nhac-xo-so.mp3" loop preload="auto"></audio>
     <section id="viewerArea" class="viewer-area" hidden><div class="viewer-header"><div><span class="section-kicker">Theo dõi trực tiếp</span><h2 id="viewerTitle">Đang kết nối phiên live...</h2></div><span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span></div><div id="viewerContent" class="viewer-content"></div></section>
+    <script src="randomizer-core.js?v=1"></script>
     <script src="script.js?v=8"></script>
 </body>
 </html>

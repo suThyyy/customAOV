@@ -428,6 +428,24 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+// ===== Safe rendering helpers =====
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[character]));
+}
+
+function safeImageSrc(value) {
+    const source = String(value ?? '');
+    return /^data:image\/(?:jpeg|png|gif|webp);base64,[a-z0-9+/]+=*$/i.test(source)
+        ? escapeHtml(source)
+        : '';
+}
+
 // ===== VIEWER SYSTEM =====
 // Viewer state
 let viewerRendered = false;
@@ -495,7 +513,7 @@ function renderViewerSession(data) {
         content.innerHTML = `
             <div class="viewer-waiting">
                 <div class="spinner"></div>
-                <p>Phiên: <b>${data.sessionName || 'Live'}</b></p>
+                <p>Phiên: <b>${escapeHtml(data.sessionName || 'Live')}</b></p>
                 <p class="viewer-subtext">Host đang chuẩn bị. Đợi chút...</p>
             </div>
         `;
@@ -579,16 +597,16 @@ function viewerSecretBoxColumn(team, name, percent, side, reveals, startIndex) {
                 </div>
             </div>
             <div class="card-info">
-                <span class="f-name">${p.name}</span>
-                <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role}</span>
+                <span class="f-name">${escapeHtml(p.name)}</span>
+                <span class="f-role">${escapeHtml(p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role] || p.role)}</span>
                 <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
             </div>
-            ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
+            ${p.champion ? `<span class="champ-hidden-text hidden">${escapeHtml(p.champion)}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
         </div>`;
     }).join('');
     return `<div class="team-col">
-        <h3>${side === 'a' ? '🔵' : '🔴'} ${name}</h3>
-        ${percent !== undefined ? `<div class="team-percent">💪 ${percent}% sức mạnh</div>` : ''}
+        <h3>${side === 'a' ? '🔵' : '🔴'} ${escapeHtml(name)}</h3>
+        ${percent !== undefined ? `<div class="team-percent">💪 ${escapeHtml(percent)}% sức mạnh</div>` : ''}
         <div class="box-grid">${cards}</div>
     </div>`;
 }
@@ -615,7 +633,7 @@ function viewerUpdateSecretBox(data) {
             viewerPlayFlip();
             // Cập nhật champ-reveal text
             const revealEl = card.querySelector('.champ-reveal');
-            if (revealEl) revealEl.innerHTML = (r.championWarn ? '⚠️ ' : '') + (r.champion || '?');
+            if (revealEl) revealEl.textContent = (r.championWarn ? '⚠️ ' : '') + (r.champion || '?');
         }
     }
 }
@@ -663,12 +681,12 @@ function viewerRenderSlotMachine(data) {
             </div>
             <div class="slot-teams">
                 <div class="slot-team team-a">
-                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">A</span><h4 class="slot-team-title">${teams.nameA}</h4>${teams.balance?.teamA !== undefined ? `<span class="slot-team-power">${teams.balance.teamA}% sức mạnh</span>` : ''}</div>
+                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">A</span><h4 class="slot-team-title">${escapeHtml(teams.nameA)}</h4>${teams.balance?.teamA !== undefined ? `<span class="slot-team-power">${escapeHtml(teams.balance.teamA)}% sức mạnh</span>` : ''}</div>
                     <div class="slot-team-list" id="viewerSlotTeamA"></div>
                 </div>
                 <div class="slot-vs" aria-hidden="true">VS</div>
                 <div class="slot-team team-b">
-                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">B</span><h4 class="slot-team-title">${teams.nameB}</h4>${teams.balance?.teamB !== undefined ? `<span class="slot-team-power">${teams.balance.teamB}% sức mạnh</span>` : ''}</div>
+                    <div class="slot-team-heading"><span class="team-crest" aria-hidden="true">B</span><h4 class="slot-team-title">${escapeHtml(teams.nameB)}</h4>${teams.balance?.teamB !== undefined ? `<span class="slot-team-power">${escapeHtml(teams.balance.teamB)}% sức mạnh</span>` : ''}</div>
                     <div class="slot-team-list" id="viewerSlotTeamB"></div>
                 </div>
             </div>
@@ -782,8 +800,8 @@ function viewerAppendRow(p, revealData) {
     row.className = 'sr-row is-arriving';
     row.innerHTML = `
         <span class="sr-avatar">${avatarHtml(p.avatar)}</span>
-        <span class="sr-player"><strong>${p.name}</strong><small>${ROLE_LABELS[p.role] || 'Tự chọn vị trí'}</small></span>
-        <span class="sr-champion"><img src="${heroImg(revealData.champion)}" alt="${revealData.champion || 'Tướng'}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${revealData.champion || 'Tự chọn'}${revealData.championWarn ? ' ⚠️' : ''}</small></span>
+        <span class="sr-player"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(ROLE_LABELS[p.role] || 'Tự chọn vị trí')}</small></span>
+        <span class="sr-champion"><img src="${heroImg(revealData.champion)}" alt="${escapeHtml(revealData.champion || 'Tướng')}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${escapeHtml(revealData.champion || 'Tự chọn')}${revealData.championWarn ? ' ⚠️' : ''}</small></span>
     `;
     const listEl = p.side === 'a' ? $('viewerSlotTeamA') : $('viewerSlotTeamB');
     if (listEl) listEl.appendChild(row);
@@ -796,6 +814,27 @@ const ROLE_LABELS = {
 };
 const TIER_COLORS = { 1: '#FFD700', 2: '#4ADE80', 3: '#94A3B8', 4: '#60A5FA', 5: '#C084FC' };
 const TIER_LABELS = { 1: 'Mâm 1 💪', 2: 'Mâm 2 🙂', 3: 'Mâm 3 🐣', 4: 'Mâm 4 🤡', 5: 'Mâm 5 🗿' };
+const RANK_CATALOG = [
+    ['dong-iii', 'Đồng III', 1], ['dong-ii', 'Đồng II', 2], ['dong-i', 'Đồng I', 3],
+    ['bac-iii', 'Bạc III', 4], ['bac-ii', 'Bạc II', 5], ['bac-i', 'Bạc I', 6],
+    ['vang-iv', 'Vàng IV', 7], ['vang-iii', 'Vàng III', 8], ['vang-ii', 'Vàng II', 9], ['vang-i', 'Vàng I', 10],
+    ['bach-kim-v', 'Bạch Kim V', 11], ['bach-kim-iv', 'Bạch Kim IV', 12], ['bach-kim-iii', 'Bạch Kim III', 13], ['bach-kim-ii', 'Bạch Kim II', 14], ['bach-kim-i', 'Bạch Kim I', 15],
+    ['kim-cuong-v', 'Kim Cương V', 16], ['kim-cuong-iv', 'Kim Cương IV', 17], ['kim-cuong-iii', 'Kim Cương III', 18], ['kim-cuong-ii', 'Kim Cương II', 19], ['kim-cuong-i', 'Kim Cương I', 20],
+    ['tinh-anh-v', 'Tinh Anh V', 21], ['tinh-anh-iv', 'Tinh Anh IV', 22], ['tinh-anh-iii', 'Tinh Anh III', 23], ['tinh-anh-ii', 'Tinh Anh II', 24], ['tinh-anh-i', 'Tinh Anh I', 25],
+    ['cao-thu', 'Cao Thủ', 28], ['dai-cao-thu-iv', 'Đại Cao Thủ IV', 30], ['dai-cao-thu-iii', 'Đại Cao Thủ III', 32], ['dai-cao-thu-ii', 'Đại Cao Thủ II', 34], ['dai-cao-thu-i', 'Đại Cao Thủ I', 36],
+    ['chien-tuong', 'Chiến Tướng', 40], ['chien-than', 'Chiến Thần', 45]
+].map(([id, label, score]) => ({ id, label, score }));
+const RANK_SCORE_IDS = new Set(RANK_CATALOG.map((rank) => rank.id));
+const DEFAULT_RANK_SCORES = Object.fromEntries(RANK_CATALOG.map((rank) => [rank.id, rank.score]));
+const RANK_GROUPS = [
+    { label: 'Đồng', ids: ['dong-iii', 'dong-ii', 'dong-i'] },
+    { label: 'Bạc', ids: ['bac-iii', 'bac-ii', 'bac-i'] },
+    { label: 'Vàng', ids: ['vang-iv', 'vang-iii', 'vang-ii', 'vang-i'] },
+    { label: 'Bạch Kim', ids: ['bach-kim-v', 'bach-kim-iv', 'bach-kim-iii', 'bach-kim-ii', 'bach-kim-i'] },
+    { label: 'Kim Cương', ids: ['kim-cuong-v', 'kim-cuong-iv', 'kim-cuong-iii', 'kim-cuong-ii', 'kim-cuong-i'] },
+    { label: 'Tinh Anh', ids: ['tinh-anh-v', 'tinh-anh-iv', 'tinh-anh-iii', 'tinh-anh-ii', 'tinh-anh-i'] },
+    { label: 'Cao Thủ trở lên', ids: ['cao-thu', 'dai-cao-thu-iv', 'dai-cao-thu-iii', 'dai-cao-thu-ii', 'dai-cao-thu-i', 'chien-tuong', 'chien-than'] }
+];
 const DEFAULT_EMOJIS = ['🐸', '🐵', '🦍', '🐔', '🐹', '🦖'];
 
 // Bể tướng theo vị trí (mặc định, user đã tổng hợp - cover đủ 128 tướng)
@@ -821,23 +860,163 @@ const DANH_TU = ['Liên Minh', 'Đội', 'Biệt Đội', 'Hội', 'Bang', 'CLB'
 let state = {
     players: [],
     tierScore: { 1: 8, 2: 4, 3: 2, 4: 1, 5: 0.5 },
+    rankScores: JSON.parse(JSON.stringify(DEFAULT_RANK_SCORES)),
     championPool: JSON.parse(JSON.stringify(DEFAULT_ROLE_CHAMPIONS)),
     settings: { teamMode: 'tier', roleMode: 'random', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true },
     history: []
 };
 
-// ===== 4. Helper =====
-function rand(n) { return Math.floor(Math.random() * n); }
+const SUPPORTED_ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
+const DEFAULT_SETTINGS = { teamMode: 'tier', roleMode: 'random', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true };
+const DEFAULT_TIER_SCORE = { 1: 8, 2: 4, 3: 2, 4: 1, 5: 0.5 };
+const MAX_AVATAR_DATA_LENGTH = 2 * 1024 * 1024;
 
-// Fisher-Yates shuffle
-function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+function cloneData(value) { return JSON.parse(JSON.stringify(value)); }
+function isPlainObject(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+function resultOk(value) { return { ok: true, value }; }
+function resultError(message) { return { ok: false, error: message }; }
+
+function validatePlayerRecord(player, index) {
+    if (!isPlainObject(player)) return resultError(`Người chơi thứ ${index + 1} không hợp lệ.`);
+    if (typeof player.id !== 'string' || !/^p[A-Za-z0-9_-]{1,99}$/.test(player.id)) return resultError(`ID người chơi thứ ${index + 1} không hợp lệ.`);
+    if (typeof player.name !== 'string' || !player.name.trim() || player.name.length > 20) return resultError(`Tên người chơi thứ ${index + 1} không hợp lệ.`);
+    if (!Number.isInteger(player.tier) || player.tier < 1 || player.tier > 5) return resultError(`Tier của người chơi thứ ${index + 1} không hợp lệ.`);
+    if (player.rankTier !== undefined && player.rankTier !== null && !RANK_SCORE_IDS.has(player.rankTier)) return resultError(`Rank của người chơi thứ ${index + 1} không hợp lệ.`);
+    if (player.active !== undefined && typeof player.active !== 'boolean') return resultError(`Trạng thái active của người chơi thứ ${index + 1} không hợp lệ.`);
+    if (player.avatar !== undefined && player.avatar !== null && !isValidAvatarData(player.avatar)) return resultError(`Avatar của người chơi thứ ${index + 1} không hợp lệ hoặc quá lớn.`);
+    return resultOk(Object.assign({}, player, {
+        active: player.active === undefined ? true : player.active,
+        rankTier: player.rankTier === undefined ? null : player.rankTier
+    }));
 }
+
+function validatePlayers(players) {
+    if (!Array.isArray(players)) return resultError('Danh sách người chơi phải là một mảng.');
+    const ids = new Set();
+    const validated = [];
+    for (let i = 0; i < players.length; i++) {
+        const item = validatePlayerRecord(players[i], i);
+        if (!item.ok) return item;
+        if (ids.has(item.value.id)) return resultError(`ID người chơi bị trùng: ${item.value.id}.`);
+        ids.add(item.value.id);
+        validated.push(item.value);
+    }
+    return resultOk(validated);
+}
+
+function validateTierScore(value, tier) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return resultError(`Điểm tier ${tier} phải là số hữu hạn không âm.`);
+    return resultOk(value);
+}
+
+function validateTierScores(scores) {
+    if (!isPlainObject(scores)) return resultError('tierScore phải là một object.');
+    const validated = Object.assign({}, DEFAULT_TIER_SCORE);
+    for (const key of Object.keys(scores)) {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_TIER_SCORE, key)) return resultError(`Tier không được hỗ trợ: ${key}.`);
+    }
+    for (const tier of Object.keys(DEFAULT_TIER_SCORE)) {
+        if (Object.prototype.hasOwnProperty.call(scores, tier)) {
+            const item = validateTierScore(scores[tier], tier);
+            if (!item.ok) return item;
+            validated[tier] = item.value;
+        }
+    }
+    return resultOk(validated);
+}
+
+function validateRankScores(scores) {
+    if (!isPlainObject(scores)) return resultError('rankScores phải là một object.');
+    const validated = Object.assign({}, DEFAULT_RANK_SCORES);
+    for (const key of Object.keys(scores)) {
+        if (!RANK_SCORE_IDS.has(key)) return resultError(`Rank không được hỗ trợ: ${key}.`);
+        const value = scores[key];
+        if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return resultError(`Điểm rank ${key} phải là số hữu hạn dương.`);
+        validated[key] = value;
+    }
+    return resultOk(validated);
+}
+
+function validateSettings(settings) {
+    if (!isPlainObject(settings)) return resultError('settings phải là một object.');
+    const validated = Object.assign({}, DEFAULT_SETTINGS, settings);
+    const allowed = {
+        teamMode: ['random', 'tier', 'rank'],
+        roleMode: ['random', 'skip'],
+        championMode: ['skip', 'full', 'byRole'],
+        balanceLevel: ['50-50', '60-40', '70-30'],
+        revealMode: ['secretBox', 'slotMachine']
+    };
+    for (const key of Object.keys(allowed)) {
+        if (!allowed[key].includes(validated[key])) return resultError(`Thiết lập ${key} không hợp lệ.`);
+    }
+    if (typeof validated.soundEnabled !== 'boolean') return resultError('Thiết lập soundEnabled không hợp lệ.');
+    return resultOk(validated);
+}
+
+function validateChampionPool(pool) {
+    if (!isPlainObject(pool)) return resultError('championPool phải là một object.');
+    const validated = cloneData(DEFAULT_ROLE_CHAMPIONS);
+    for (const key of Object.keys(pool)) {
+        if (!SUPPORTED_ROLES.includes(key)) return resultError(`Role trong championPool không được hỗ trợ: ${key}.`);
+        if (!Array.isArray(pool[key]) || pool[key].some((hero) => typeof hero !== 'string' || !hero.trim())) return resultError(`Pool champion của role ${key} không hợp lệ.`);
+        validated[key] = pool[key].slice();
+    }
+    // Preserve the existing behavior for an old save whose every role pool is empty.
+    if (SUPPORTED_ROLES.every((role) => validated[role].length === 0)) return resultOk(cloneData(DEFAULT_ROLE_CHAMPIONS));
+    return resultOk(validated);
+}
+
+function validateHistory(history) {
+    if (!Array.isArray(history)) return resultError('history phải là một mảng.');
+    for (let i = 0; i < history.length; i++) {
+        const item = history[i];
+        if (!isPlainObject(item) || !Array.isArray(item.teamA) || !Array.isArray(item.teamB)) return resultError(`Bản ghi lịch sử thứ ${i + 1} không hợp lệ.`);
+        for (const team of [item.teamA, item.teamB]) {
+            for (const player of team) {
+                if (!isPlainObject(player) || typeof player.name !== 'string') return resultError(`Người chơi trong lịch sử thứ ${i + 1} không hợp lệ.`);
+                if (player.avatar !== undefined && player.avatar !== null && !isValidAvatarData(player.avatar)) return resultError(`Avatar trong lịch sử thứ ${i + 1} không hợp lệ.`);
+            }
+        }
+    }
+    return resultOk(cloneData(history));
+}
+
+function isValidAvatarData(value) {
+    return typeof value === 'string' && value.length <= MAX_AVATAR_DATA_LENGTH && /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(value);
+}
+
+function validateStateData(data) {
+    if (!isPlainObject(data)) return resultError('Dữ liệu state phải là một object.');
+    const validated = {
+        players: [],
+        tierScore: cloneData(DEFAULT_TIER_SCORE),
+        rankScores: cloneData(DEFAULT_RANK_SCORES),
+        championPool: cloneData(DEFAULT_ROLE_CHAMPIONS),
+        settings: Object.assign({}, DEFAULT_SETTINGS),
+        history: []
+    };
+    if (Object.prototype.hasOwnProperty.call(data, 'players')) { const item = validatePlayers(data.players); if (!item.ok) return item; validated.players = item.value; }
+    if (Object.prototype.hasOwnProperty.call(data, 'tierScore')) { const item = validateTierScores(data.tierScore); if (!item.ok) return item; validated.tierScore = item.value; }
+    if (Object.prototype.hasOwnProperty.call(data, 'rankScores')) { const item = validateRankScores(data.rankScores); if (!item.ok) return item; validated.rankScores = item.value; }
+    if (Object.prototype.hasOwnProperty.call(data, 'championPool')) { const item = validateChampionPool(data.championPool); if (!item.ok) return item; validated.championPool = item.value; }
+    if (Object.prototype.hasOwnProperty.call(data, 'settings')) { const item = validateSettings(data.settings); if (!item.ok) return item; validated.settings = item.value; }
+    if (Object.prototype.hasOwnProperty.call(data, 'history')) { const item = validateHistory(data.history); if (!item.ok) return item; validated.history = item.value; }
+    return resultOk(validated);
+}
+
+function parseStatePayload(text) {
+    try { return validateStateData(JSON.parse(text)); } catch (e) { return resultError('File JSON không hợp lệ.'); }
+}
+
+// ===== 4. Helper =====
+const randomizerCore = globalThis.CustomAOVRandomizer;
+if (!randomizerCore) throw new Error('CustomAOV randomizer core failed to load.');
+
+// Keep the original local function names and call contracts. These wrappers
+// preserve the existing application flow while delegating core behavior.
+function rand(n) { return randomizerCore.rand(n); }
+function shuffle(arr) { return randomizerCore.shuffle(arr); }
 
 function uid() { return 'p' + Date.now() + rand(10000); }
 
@@ -849,15 +1028,9 @@ function loadState() {
     try {
         const raw = localStorage.getItem('lq_state');
         if (raw) {
-            const d = JSON.parse(raw);
-            state = Object.assign(state, d);
-            state.settings = Object.assign({ teamMode: 'tier', roleMode: 'random', championMode: 'byRole', balanceLevel: '60-40', revealMode: 'secretBox', soundEnabled: true }, d.settings);
-            state.championPool = Object.assign(JSON.parse(JSON.stringify(DEFAULT_ROLE_CHAMPIONS)), d.championPool);
-            // Nếu bể lưu cũ bị rỗng thì dùng lại mặc định theo vị trí
-            if (Object.values(state.championPool).every((p) => p.length === 0)) {
-                state.championPool = JSON.parse(JSON.stringify(DEFAULT_ROLE_CHAMPIONS));
-            }
-            state.tierScore = Object.assign({ 1: 8, 2: 4, 3: 2, 4: 1, 5: 0.5 }, d.tierScore);
+            const parsed = parseStatePayload(raw);
+            if (parsed.ok) state = parsed.value;
+            else console.warn('load state rejected:', parsed.error);
         }
     } catch (e) { console.warn('load state fail', e); }
 }
@@ -908,11 +1081,24 @@ document.addEventListener('keydown', (e) => {
 // ===== 6. Tier select =====
 function renderTierSelect() {
     tierSelect.innerHTML = '';
-    for (let i = 1; i <= 5; i++) {
-        const o = document.createElement('option');
-        o.value = i;
-        o.textContent = TIER_LABELS[i];
-        tierSelect.appendChild(o);
+    if (state.settings.teamMode === 'rank') {
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Chọn rank';
+        tierSelect.appendChild(placeholder);
+        RANK_CATALOG.forEach((rank) => {
+            const o = document.createElement('option');
+            o.value = rank.id;
+            o.textContent = rank.label;
+            tierSelect.appendChild(o);
+        });
+    } else {
+        for (let i = 1; i <= 5; i++) {
+            const o = document.createElement('option');
+            o.value = i;
+            o.textContent = TIER_LABELS[i];
+            tierSelect.appendChild(o);
+        }
     }
 }
 
@@ -930,7 +1116,9 @@ function resizeImage(file, cb) {
             c.width = width; c.height = height;
             const ctx = c.getContext('2d');
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, width, height);
-            cb(c.toDataURL('image/jpeg', 0.78));
+            const dataUrl = c.toDataURL('image/jpeg', 0.78);
+            if (!isValidAvatarData(dataUrl)) { alert('⚠️ Avatar quá lớn hoặc không hợp lệ'); return; }
+            cb(dataUrl);
         };
         img.onerror = () => alert('⚠️ Không đọc được ảnh');
         img.src = e.target.result;
@@ -939,7 +1127,8 @@ function resizeImage(file, cb) {
 }
 
 function avatarHtml(avatar) {
-    return avatar ? `<img src="${avatar}" alt="">` : `<span class="avatar-emoji">${DEFAULT_EMOJIS[rand(DEFAULT_EMOJIS.length)]}</span>`;
+    const source = safeImageSrc(avatar);
+    return source ? `<img src="${source}" alt="">` : `<span class="avatar-emoji">${DEFAULT_EMOJIS[rand(DEFAULT_EMOJIS.length)]}</span>`;
 }
 
 // ===== 8. Render player list =====
@@ -948,17 +1137,18 @@ function renderPlayers() {
     const activeCount = state.players.filter(p => p.active !== false).length;
     playerCount.textContent = `(${activeCount}/${state.players.length} chơi)`;
     state.players.forEach((p) => {
-        const color = TIER_COLORS[p.tier];
+        const color = TIER_COLORS[p.tier] || TIER_COLORS[3];
         const chip = document.createElement('div');
         chip.className = 'player-chip' + (p.active === false ? ' inactive' : '');
         chip.style.borderColor = color;
         chip.innerHTML = `
-            <button class="chip-avatar" data-edit="${p.id}" type="button" aria-label="Đổi ảnh của ${p.name}">${avatarHtml(p.avatar)}</button>
-            <button class="chip-main" data-toggle="${p.id}" type="button" aria-label="${p.name}, ${TIER_LABELS[p.tier]}. Bấm để ${p.active === false ? 'tham gia' : 'tạm nghỉ'}.">
-                <span class="chip-name">${p.name}</span>
+            <button class="chip-avatar" data-edit="${escapeHtml(p.id)}" type="button" aria-label="Đổi ảnh của ${escapeHtml(p.name)}">${avatarHtml(p.avatar)}</button>
+            <button class="chip-main" data-toggle="${escapeHtml(p.id)}" type="button" aria-label="${escapeHtml(p.name)}, ${escapeHtml(TIER_LABELS[p.tier] || '')}. Bấm để ${p.active === false ? 'tham gia' : 'tạm nghỉ'}.">
+                <span class="chip-name">${escapeHtml(p.name)}</span>
                 <span class="chip-tier">${TIER_LABELS[p.tier]}</span>
             </button>
-            <button class="remove" data-del="${p.id}" type="button" aria-label="Xóa ${p.name}">✕</button>
+            ${state.settings.teamMode === 'rank' ? `<select class="player-rank-select" data-rank-for="${escapeHtml(p.id)}" aria-label="Rank của ${escapeHtml(p.name)}"><option value="">Chọn rank</option>${RANK_CATALOG.map((rank) => `<option value="${rank.id}"${p.rankTier === rank.id ? ' selected' : ''}>${escapeHtml(rank.label)}</option>`).join('')}</select>` : ''}
+            <button class="remove" data-del="${escapeHtml(p.id)}" type="button" aria-label="Xóa ${escapeHtml(p.name)}">✕</button>
         `;
         chip.title = p.active === false ? 'Bấm để đánh dấu "đang chơi"' : 'Bấm để tắt (không chơi hôm nay)';
         playerList.appendChild(chip);
@@ -969,11 +1159,26 @@ function renderPlayers() {
 // ===== 9. Render tier score =====
 function renderTierScore() {
     tierScoreGrid.innerHTML = '';
-    for (let i = 1; i <= 5; i++) {
-        const div = document.createElement('div');
-        div.className = 'tier-score-item';
-        div.innerHTML = `<label>${TIER_LABELS[i]}</label><input type="number" step="0.5" min="0" data-tier="${i}" value="${state.tierScore[i]}">`;
-        tierScoreGrid.appendChild(div);
+    const rankMode = state.settings.teamMode === 'rank';
+    $('scorePanelTitle').textContent = rankMode ? 'Điểm cân bằng theo rank' : 'Điểm sức mạnh theo mâm';
+    $('resetRankScoreBtn').hidden = !rankMode;
+    if (rankMode) {
+        RANK_GROUPS.forEach((group) => {
+            const section = document.createElement('div');
+            section.className = 'rank-score-group';
+            section.innerHTML = `<h3>${escapeHtml(group.label)}</h3>${group.ids.map((id) => {
+                const rank = RANK_CATALOG.find((item) => item.id === id);
+                return `<div class="tier-score-item"><label>${escapeHtml(rank.label)}</label><input type="number" step="0.1" min="0.0001" data-rank-score="${id}" value="${escapeHtml(state.rankScores[id])}"></div>`;
+            }).join('')}`;
+            tierScoreGrid.appendChild(section);
+        });
+    } else {
+        for (let i = 1; i <= 5; i++) {
+            const div = document.createElement('div');
+            div.className = 'tier-score-item';
+            div.innerHTML = `<label>${escapeHtml(TIER_LABELS[i])}</label><input type="number" step="0.5" min="0" data-tier="${i}" value="${escapeHtml(state.tierScore[i])}">`;
+            tierScoreGrid.appendChild(div);
+        }
     }
 }
 
@@ -988,7 +1193,7 @@ function renderHeroGrid() {
         card.type = 'button';
         card.className = 'hero-card' + (selected.includes(h.name) ? ' selected' : '');
         card.setAttribute('aria-pressed', selected.includes(h.name) ? 'true' : 'false');
-        card.innerHTML = `<img src="${h.imgUrl}" alt="${h.name}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'"><div class="hero-name">${h.name}</div>`;
+        card.innerHTML = `<img src="${escapeHtml(h.imgUrl)}" alt="${escapeHtml(h.name)}" loading="lazy" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/><text x=%2250%25%22 y=%2255%25%22 fill=%22%23fff%22 font-size=%2230%22 text-anchor=%22middle%22>❓</text></svg>'"><div class="hero-name">${escapeHtml(h.name)}</div>`;
         card.addEventListener('click', () => toggleHero(h.name));
         heroGrid.appendChild(card);
     });
@@ -1015,80 +1220,40 @@ function renderSettings() {
     document.querySelectorAll('input[name="balanceLevel"]').forEach(r => r.checked = r.value === state.settings.balanceLevel);
     document.querySelectorAll('input[name="revealMode"]').forEach(r => r.checked = r.value === state.settings.revealMode);
     $('soundToggle').checked = state.settings.soundEnabled;
-    $('balanceRow').style.opacity = state.settings.teamMode === 'tier' ? '1' : '0.4';
-    $('balanceRow').style.pointerEvents = state.settings.teamMode === 'tier' ? 'auto' : 'none';
+    const usesScores = state.settings.teamMode === 'tier' || state.settings.teamMode === 'rank';
+    $('balanceRow').style.opacity = usesScores ? '1' : '0.4';
+    $('balanceRow').style.pointerEvents = usesScores ? 'auto' : 'none';
+    renderTierSelect();
+    renderTierScore();
+    renderPlayers();
 }
 
 // ===== 12. Thuật toán chia team =====
 
-// Chia random: Fisher-Yates rồi cắt đôi
-function splitRandom(players) {
-    const shuffled = shuffle(players);
-    const sizeA = Math.floor(players.length / 2);
-    return { teamA: shuffled.slice(0, sizeA), teamB: shuffled.slice(sizeA) };
-}
-
-// Sinh tổ hợp chọn k phần tử (đệ quy) - dùng cho brute-force cân tier
+// Core implementation is in randomizer-core.js; this wrapper preserves the
+// original state-based application contract.
 function generateCombinations(arr, k) {
-    const results = [];
-    function helper(start, combo) {
-        if (combo.length === k) { results.push([...combo]); return; }
-        for (let i = start; i <= arr.length - (k - combo.length); i++) {
-            combo.push(arr[i]);
-            helper(i + 1, combo);
-            combo.pop();
-        }
-    }
-    helper(0, []);
-    return results;
+    return randomizerCore.generateCombinations(arr, k);
 }
 
-// Chia cân theo tier: brute-force duyệt tổ hợp, lọc theo % sức mạnh
+function splitRandom(players) {
+    return randomizerCore.splitRandom(players);
+}
+
 function splitTierBalanced(players) {
-    const n = players.length;
-    const sizeA = Math.floor(n / 2);
-    const power = players.map(p => Number(state.tierScore[p.tier]) || 1);
-    const totalPower = power.reduce((s, x) => s + x, 0);
-    const combos = generateCombinations(players.map((_, i) => i), sizeA);
-
-    const ranges = { '50-50': [48, 52], '60-40': [40, 60], '70-30': [30, 70] };
-    let [lo, hi] = ranges[state.settings.balanceLevel] || [40, 60];
-
-    let candidates = [];
-    for (let attempt = 0; attempt <= 3; attempt++) {
-        candidates = combos.filter((combo) => {
-            const powerA = combo.reduce((s, i) => s + power[i], 0);
-            const percentA = (powerA / totalPower) * 100;
-            return percentA >= lo && percentA <= hi;
-        });
-        if (candidates.length) break;
-        lo -= 5; hi += 5;
-    }
-
-    let comboA, warning = false;
-    if (candidates.length) {
-        comboA = candidates[rand(candidates.length)];   // random trong nhóm hợp lệ
-    } else {
-        warning = true;
-        let best = null, bestDiff = Infinity;
-        for (const combo of combos) {
-            const powerA = combo.reduce((s, i) => s + power[i], 0);
-            const diff = Math.abs((powerA / totalPower) * 100 - 50);
-            if (diff < bestDiff) { bestDiff = diff; best = combo; }
-        }
-        comboA = best;
-    }
-
-    const setA = new Set(comboA);
-    const teamA = players.filter((_, i) => setA.has(i));
-    const teamB = players.filter((_, i) => !setA.has(i));
-    return { teamA, teamB, warning };
+    const isRankMode = state.settings.teamMode === 'rank';
+    return randomizerCore.splitTierBalanced(
+        players,
+        isRankMode ? state.rankScores : state.tierScore,
+        state.settings.balanceLevel,
+        Math.random,
+        (player) => isRankMode ? player.rankTier : player.tier
+    );
 }
 
 // ===== 13. Gán vị trí =====
 function assignPositions(team) {
-    const pos = shuffle(ROLES);
-    return team.map((p, i) => ({ ...p, role: i < pos.length ? pos[i] : 'flex' }));
+    return randomizerCore.assignPositions(team, ROLES);
 }
 
 // ===== 14. Gán tướng =====
@@ -1098,34 +1263,11 @@ function heroImg(name) {
 }
 
 function assignChampions(teamA, teamB) {
-    const mode = state.settings.championMode;
-    const fullPool = getFullPool();
-    const usedGlobal = new Set();
-
-    function assignTeam(team) {
-        const usedInTeam = new Set();
-        return team.map((p) => {
-            if (mode === 'skip') return { ...p, champion: null, championWarn: false };  // không bốc tướng
-            let pool;
-            if (p.role === 'flex' || mode === 'full') pool = fullPool;
-            else pool = (state.championPool[p.role] && state.championPool[p.role].length) ? state.championPool[p.role] : fullPool;
-            if (!pool.length) pool = fullPool;
-            if (!pool.length) return { ...p, champion: null, championWarn: true };
-
-            let candidates = pool.filter(c => !usedGlobal.has(c));
-            let warn = false;
-            if (!candidates.length) {
-                candidates = pool.filter(c => !usedInTeam.has(c));
-                warn = true;
-                if (!candidates.length) candidates = pool;
-            }
-            const champ = candidates[rand(candidates.length)];
-            usedGlobal.add(champ);
-            usedInTeam.add(champ);
-            return { ...p, champion: champ, championWarn: warn };
-        });
-    }
-    return [assignTeam(teamA), assignTeam(teamB)];
+    return randomizerCore.assignChampions(teamA, teamB, {
+        championMode: state.settings.championMode,
+        championPool: state.championPool,
+        heroNames: HEROES_DATA.map((hero) => hero.name)
+    });
 }
 
 // ===== 15. Sinh tên team =====
@@ -1198,6 +1340,11 @@ function getFullPool() {
     return merged.length ? merged : HEROES_DATA.map((h) => h.name);
 }
 
+function getBalanceScore(player) {
+    if (state.settings.teamMode === 'rank') return Number(state.rankScores[player.rankTier]);
+    return Number(state.tierScore[player.tier]) || 1;
+}
+
 function draw() {
     ensureAudio();
     resetPickedMarks();
@@ -1209,6 +1356,13 @@ function draw() {
     if (active.length > 10) {
         alert(`Còn ${active.length} người đang chơi (dư ${active.length - 10}). Bấm nút "Chọn 10 người" để loại bớt trước.`);
         return;
+    }
+    if (state.settings.teamMode === 'rank') {
+        const missingRanks = active.filter((player) => !RANK_SCORE_IDS.has(player.rankTier));
+        if (missingRanks.length) {
+            alert(`Cần chọn Rank cho: ${missingRanks.map((player) => player.name).join(', ')}.`);
+            return;
+        }
     }
     doDraw(active);
 }
@@ -1230,8 +1384,8 @@ function startElimination(players) {
 
     function renderElim() {
         $('elimGrid').innerHTML = [...remaining, ...eliminated, ...picked].map(p => `
-            <div class="elim-card${p.out ? ' eliminated' : ''}${p.picked ? ' selected-mark' : ''}" data-id="${p.id}">
-                ${p.out ? '<span class="out-mark">😭 OUT</span>' : ''}<span class="elim-avatar">${avatarHtml(p.avatar)}</span><span>${p.name}</span>${p.picked ? '<span class="picked-mark">✅ CHƠI</span>' : ''}
+            <div class="elim-card${p.out ? ' eliminated' : ''}${p.picked ? ' selected-mark' : ''}" data-id="${escapeHtml(p.id)}">
+                ${p.out ? '<span class="out-mark">😭 OUT</span>' : ''}<span class="elim-avatar">${avatarHtml(p.avatar)}</span><span>${escapeHtml(p.name)}</span>${p.picked ? '<span class="picked-mark">✅ CHƠI</span>' : ''}
             </div>
         `).join('');
     }
@@ -1337,15 +1491,15 @@ function doDraw(players) {
     const [nameA, nameB] = generateTeamNames();
 
     const balance = {};
-    if (s.teamMode === 'tier') {
-        const pA = teamA.reduce((sum, p) => sum + (Number(state.tierScore[p.tier]) || 1), 0);
-        const pB = teamB.reduce((sum, p) => sum + (Number(state.tierScore[p.tier]) || 1), 0);
+    if (s.teamMode === 'tier' || s.teamMode === 'rank') {
+        const pA = teamA.reduce((sum, p) => sum + getBalanceScore(p), 0);
+        const pB = teamB.reduce((sum, p) => sum + getBalanceScore(p), 0);
         const tot = pA + pB;
         balance.teamA = Math.round((pA / tot) * 100);
         balance.teamB = Math.round((pB / tot) * 100);
     }
 
-    currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning };
+    currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning, balanceMode: s.teamMode };
 
     // Live sync: push teams lên Firebase
     if (isHost && currentSessionId) {
@@ -1393,16 +1547,16 @@ function teamColumnSecretBox(team, name, percent, side) {
                 </div>
             </div>
             <div class="card-info">
-                <span class="f-name">${p.name}</span>
-                <span class="f-role">${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]}</span>
+                <span class="f-name">${escapeHtml(p.name)}</span>
+                <span class="f-role">${escapeHtml(p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role])}</span>
                 <span class="f-champ-name">${p.champion ? (p.championWarn ? '⚠️ ' : '') + '<span class="champ-reveal">???</span>' : 'Tự chọn tướng'}</span>
             </div>
-            ${p.champion ? `<span class="champ-hidden-text hidden">${p.champion}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
+            ${p.champion ? `<span class="champ-hidden-text hidden">${escapeHtml(p.champion)}${p.championWarn ? ' ⚠️' : ''}</span>` : ''}
         </div>
     `).join('');
     return `<div class="team-col">
-        <h3>${side === 'a' ? '🔵' : '🔴'} ${name}</h3>
-        ${percent !== undefined ? `<div class="team-percent">💪 ${percent}% sức mạnh</div>` : ''}
+        <h3>${side === 'a' ? '🔵' : '🔴'} ${escapeHtml(name)}</h3>
+        ${percent !== undefined ? `<div class="team-percent">💪 ${escapeHtml(percent)}% sức mạnh</div>` : ''}
         <div class="box-grid">${cards}</div>
     </div>`;
 }
@@ -1456,8 +1610,8 @@ function renderSlotMachine() {
                 <div class="slot-team team-a">
                     <div class="slot-team-heading">
                         <span class="team-crest" aria-hidden="true">A</span>
-                        <h4 class="slot-team-title">${r.nameA}</h4>
-                        ${r.balance.teamA !== undefined ? `<span class="slot-team-power">${r.balance.teamA}% sức mạnh</span>` : ''}
+                        <h4 class="slot-team-title">${escapeHtml(r.nameA)}</h4>
+                        ${r.balance.teamA !== undefined ? `<span class="slot-team-power">${escapeHtml(r.balance.teamA)}% sức mạnh</span>` : ''}
                     </div>
                     <div class="slot-team-list" id="slotTeamA"></div>
                 </div>
@@ -1465,8 +1619,8 @@ function renderSlotMachine() {
                 <div class="slot-team team-b">
                     <div class="slot-team-heading">
                         <span class="team-crest" aria-hidden="true">B</span>
-                        <h4 class="slot-team-title">${r.nameB}</h4>
-                        ${r.balance.teamB !== undefined ? `<span class="slot-team-power">${r.balance.teamB}% sức mạnh</span>` : ''}
+                        <h4 class="slot-team-title">${escapeHtml(r.nameB)}</h4>
+                        ${r.balance.teamB !== undefined ? `<span class="slot-team-power">${escapeHtml(r.balance.teamB)}% sức mạnh</span>` : ''}
                     </div>
                     <div class="slot-team-list" id="slotTeamB"></div>
                 </div>
@@ -1502,8 +1656,8 @@ function renderSlotMachine() {
         row.className = 'sr-row is-arriving';
         row.innerHTML = `
             <span class="sr-avatar">${avatarHtml(p.avatar)}</span>
-            <span class="sr-player"><strong>${p.name}</strong><small>${ROLE_LABELS[p.role] || 'Tự chọn vị trí'}</small></span>
-            <span class="sr-champion"><img src="${heroImg(p.champion)}" alt="${p.champion || 'Tướng'}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${p.champion || 'Tự chọn'}${p.championWarn ? ' ⚠️' : ''}</small></span>
+            <span class="sr-player"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(ROLE_LABELS[p.role] || 'Tự chọn vị trí')}</small></span>
+            <span class="sr-champion"><img src="${heroImg(p.champion)}" alt="${escapeHtml(p.champion || 'Tướng')}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23333%22/></svg>'"><small>${escapeHtml(p.champion || 'Tự chọn')}${p.championWarn ? ' ⚠️' : ''}</small></span>
         `;
         (p.side === 'a' ? $('slotTeamA') : $('slotTeamB')).appendChild(row);
     };
@@ -1661,8 +1815,9 @@ function saveHistory() {
         timestamp: new Date().toISOString(),
         teamAName: r.nameA,
         teamBName: r.nameB,
-        teamA: r.teamA.map(p => ({ name: p.name, avatar: p.avatar, tier: p.tier, role: p.role, champion: p.champion, championWarn: p.championWarn })),
-        teamB: r.teamB.map(p => ({ name: p.name, avatar: p.avatar, tier: p.tier, role: p.role, champion: p.champion, championWarn: p.championWarn })),
+        balanceMode: r.balanceMode,
+        teamA: r.teamA.map(p => ({ name: p.name, avatar: p.avatar, tier: p.tier, rankTier: p.rankTier || null, role: p.role, champion: p.champion, championWarn: p.championWarn })),
+        teamB: r.teamB.map(p => ({ name: p.name, avatar: p.avatar, tier: p.tier, rankTier: p.rankTier || null, role: p.role, champion: p.champion, championWarn: p.championWarn })),
         balancePercent: r.balance
     };
     state.history.unshift(item);
@@ -1679,7 +1834,7 @@ function renderHistory() {
         div.className = 'history-item';
         div.innerHTML = `
             <div class="hi-info">
-                <div class="hi-teams">🔵 ${h.teamAName} vs 🔴 ${h.teamBName}</div>
+            <div class="hi-teams">🔵 ${escapeHtml(h.teamAName)} vs 🔴 ${escapeHtml(h.teamBName)}</div>
                 <div class="hi-time">${new Date(h.timestamp).toLocaleString('vi-VN')}</div>
             </div>
             <button data-view="${i}">Xem lại</button>
@@ -1694,9 +1849,9 @@ function showHistoryModal(i) {
     $('modalTitle').textContent = `🔵 ${h.teamAName} vs 🔴 ${h.teamBName}`;
     let html = '';
     [['🔵 ' + h.teamAName, h.teamA], ['🔴 ' + h.teamBName, h.teamB]].forEach(([t, team]) => {
-        html += `<p class="modal-team-title">${t}${h.balancePercent && h.balancePercent.teamA !== undefined ? '' : ''}</p>`;
+        html += `<p class="modal-team-title">${escapeHtml(t)}${h.balancePercent && h.balancePercent.teamA !== undefined ? '' : ''}</p>`;
         team.forEach((p, idx) => {
-            html += `<div class="modal-player-line">${idx + 1}. ${p.name} - ${p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role]} → ${p.champion || '?'}${p.championWarn ? ' ⚠️' : ''}</div>`;
+            html += `<div class="modal-player-line">${idx + 1}. ${escapeHtml(p.name)} - ${escapeHtml(p.role === 'flex' ? 'Vị trí tự chọn' : ROLE_LABELS[p.role])} → ${escapeHtml(p.champion || '?')}${p.championWarn ? ' ⚠️' : ''}</div>`;
         });
     });
     $('modalBody').innerHTML = html;
@@ -1717,19 +1872,15 @@ function exportData() {
 function importData(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
+        const parsed = parseStatePayload(e.target.result);
+        if (!parsed.ok) { alert(`⚠️ Không nhập được dữ liệu: ${parsed.error}`); return; }
+        if (!confirm('📥 Nhập dữ liệu sẽ THAY THẾ toàn bộ dữ liệu hiện tại, tiếp tục?')) return;
         try {
-            const data = JSON.parse(e.target.result);
-            if (!confirm('📥 Nhập dữ liệu sẽ THAY THẾ toàn bộ dữ liệu hiện tại, tiếp tục?')) return;
-            state = Object.assign(state, data);
-            state.settings = Object.assign(state.settings, data.settings);
-            state.championPool = Object.assign({ top: [], jungle: [], mid: [], adc: [], support: [] }, data.championPool);
-            state.tierScore = Object.assign({ 1: 8, 2: 4, 3: 2, 4: 1, 5: 0.5 }, data.tierScore);
-            state.players = data.players || [];
-            state.history = data.history || [];
+            state = parsed.value;
             saveState();
             location.reload();
         } catch (err) {
-            alert('⚠️ File JSON không hợp lệ!');
+            alert('⚠️ Không thể lưu dữ liệu đã nhập.');
         }
     };
     reader.readAsText(file);
@@ -1740,7 +1891,20 @@ addBtn.addEventListener('click', () => {
     const name = nameInput.value.trim();
     if (!name) { alert('Nhập tên đã!'); return; }
     if (state.players.length >= 30) { alert('Tối đa 30 thành viên thôi! 😅'); return; }
-    state.players.push({ id: uid(), name, tier: Number(tierSelect.value), avatar: pendingAvatar, active: true });
+    const rankMode = state.settings.teamMode === 'rank';
+    let id = uid();
+    while (state.players.some((player) => player.id === id)) id = uid();
+    const candidate = {
+        id,
+        name,
+        tier: rankMode ? 3 : Number(tierSelect.value),
+        rankTier: rankMode ? (tierSelect.value || null) : null,
+        avatar: pendingAvatar,
+        active: true
+    };
+    const validated = validatePlayerRecord(candidate, state.players.length);
+    if (!validated.ok) { alert(`⚠️ ${validated.error}`); return; }
+    state.players.push(validated.value);
     pendingAvatar = null;
     avatarPreview.innerHTML = '+';
     nameInput.value = '';
@@ -1755,12 +1919,14 @@ avatarInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     resizeImage(file, (base64) => {
+        if (!isValidAvatarData(base64)) { alert('⚠️ Avatar quá lớn hoặc không hợp lệ'); return; }
         if (editingAvatarId) {
             const p = state.players.find(x => x.id === editingAvatarId);
             if (p) { p.avatar = base64; saveState(); renderPlayers(); editingAvatarId = null; }
         } else {
             pendingAvatar = base64;
-            avatarPreview.innerHTML = `<img src="${base64}" alt="">`;
+            const safeSource = safeImageSrc(base64);
+            avatarPreview.innerHTML = safeSource ? `<img src="${safeSource}" alt="">` : '+';
         }
     });
     e.target.value = '';
@@ -1785,10 +1951,37 @@ playerList.addEventListener('click', (e) => {
     }
 });
 
+playerList.addEventListener('change', (e) => {
+    const playerId = e.target.dataset.rankFor;
+    if (!playerId) return;
+    const player = state.players.find((item) => item.id === playerId);
+    if (!player) return;
+    player.rankTier = e.target.value || null;
+    saveState();
+});
+
 // Tier score
 tierScoreGrid.addEventListener('input', (e) => {
+    const rankId = e.target.dataset.rankScore;
+    if (rankId) {
+        const value = Number(e.target.value);
+        if (Number.isFinite(value) && value > 0 && RANK_SCORE_IDS.has(rankId)) {
+            state.rankScores[rankId] = value;
+            saveState();
+        }
+        return;
+    }
     const tier = e.target.dataset.tier;
-    if (tier) { state.tierScore[tier] = Number(e.target.value) || 0; saveState(); }
+    if (tier) {
+        const value = Number(e.target.value);
+        const validated = validateTierScore(value, tier);
+        if (validated.ok) { state.tierScore[tier] = validated.value; saveState(); }
+    }
+});
+$('resetRankScoreBtn').addEventListener('click', () => {
+    state.rankScores = JSON.parse(JSON.stringify(DEFAULT_RANK_SCORES));
+    saveState();
+    renderTierScore();
 });
 $('tierScoreToggle').addEventListener('click', () => {
     const g = tierScoreGrid;
@@ -1798,11 +1991,18 @@ $('tierScoreToggle').addEventListener('click', () => {
 });
 
 // Settings
-document.querySelectorAll('input[name="teamMode"]').forEach(r => r.addEventListener('change', () => { state.settings.teamMode = r.value; saveState(); renderSettings(); }));
-document.querySelectorAll('input[name="roleMode"]').forEach(r => r.addEventListener('change', () => { state.settings.roleMode = r.value; saveState(); }));
-document.querySelectorAll('input[name="championMode"]').forEach(r => r.addEventListener('change', () => { state.settings.championMode = r.value; saveState(); }));
-document.querySelectorAll('input[name="balanceLevel"]').forEach(r => r.addEventListener('change', () => { state.settings.balanceLevel = r.value; saveState(); }));
-document.querySelectorAll('input[name="revealMode"]').forEach(r => r.addEventListener('change', () => { state.settings.revealMode = r.value; saveState(); }));
+function updateSetting(key, value, afterChange) {
+    const candidate = validateSettings(Object.assign({}, state.settings, { [key]: value }));
+    if (!candidate.ok) return;
+    state.settings = candidate.value;
+    saveState();
+    if (afterChange) afterChange();
+}
+document.querySelectorAll('input[name="teamMode"]').forEach(r => r.addEventListener('change', () => updateSetting('teamMode', r.value, renderSettings)));
+document.querySelectorAll('input[name="roleMode"]').forEach(r => r.addEventListener('change', () => updateSetting('roleMode', r.value)));
+document.querySelectorAll('input[name="championMode"]').forEach(r => r.addEventListener('change', () => updateSetting('championMode', r.value)));
+document.querySelectorAll('input[name="balanceLevel"]').forEach(r => r.addEventListener('change', () => updateSetting('balanceLevel', r.value)));
+document.querySelectorAll('input[name="revealMode"]').forEach(r => r.addEventListener('change', () => updateSetting('revealMode', r.value)));
 $('soundToggle').addEventListener('change', () => { state.settings.soundEnabled = $('soundToggle').checked; saveState(); });
 
 // Hero tabs + search
@@ -1910,7 +2110,7 @@ resultArea.addEventListener('click', (e) => {
 function revealChampName(card) {
     const hidden = card.querySelector('.champ-hidden-text');
     const revealEl = card.querySelector('.champ-reveal');
-    if (hidden && revealEl) revealEl.innerHTML = hidden.innerHTML;
+    if (hidden && revealEl) revealEl.textContent = hidden.textContent;
 }
 
 // History
@@ -2017,7 +2217,9 @@ async function loadDefaultMembers() {
         if (!res.ok) return;
         const members = await res.json();
         if (Array.isArray(members) && members.length) {
-            state.players = members;
+            const validated = validatePlayers(members);
+            if (!validated.ok) { console.warn('default members rejected:', validated.error); return; }
+            state.players = validated.value;
             saveState();
             renderPlayers();
         }
@@ -2050,7 +2252,9 @@ $('reloadDataBtn').addEventListener('click', () => {
     fetch('data/members.json')
         .then((r) => r.json())
         .then((members) => {
-            state.players = Array.isArray(members) ? members : [];
+            const validated = validatePlayers(Array.isArray(members) ? members : []);
+            if (!validated.ok) { alert(`⚠️ Không tải được dữ liệu thành viên: ${validated.error}`); return; }
+            state.players = validated.value;
             state.history = [];
             saveState();
             location.reload();

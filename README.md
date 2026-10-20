@@ -145,3 +145,54 @@ Sau khi Phase 1 vận hành ổn định, nhóm sẽ bắt đầu phân tích ng
 *Bắt đầu từ một công cụ hữu ích, xây dựng dựa trên nhu cầu thực tế và từng bước phát triển thành nền tảng phục vụ cộng đồng Custom Liên Quân Mobile.*
 
 ---
+
+### Flow
+
+Bước 1: Hoàn thiện Phase 1 hiện tại
+
+Giữ nguyên:
+
+Vanilla JS + localStorage + Firebase Live Share
+
+
+Bước 2: Thiết kế database Phase 2
+
+Dựng PostgreSQL schema cho:
+
+- Profiles.
+- Communities.
+- Rooms.
+- Matches.
+- Match players.
+- Statistics.
+
+
+Bước 3: Dựng Supabase Auth và API
+
+Cho phép tạo tài khoản, profile và lưu match history.
+
+Bước 4: Chuyển từng phần frontend
+
+Khi Phase ổn, chuyển giao diện sang:
+
+React + TypeScript + Vite
+
+Không rewrite randomizer. Giữ core hiện tại và gọi nó từ React.
+
+Bước 5: Migrate Live Share
+
+Chuyển Firebase Live Share sang Supabase Realtime khi hệ thống mới ổn định.
+
+### Kiến trúc cuối cùng
+
+React + TypeScript + Vite
+              |
+              v
+        Supabase Auth
+              |
+              v
+     PostgreSQL + RLS
+        |       |       |
+     Storage  Realtime  Functions
+
+Firebase là giải pháp tạm thời cho Live Share hiện tại. Về lâu dài, chọn backend duy nhất là Supabase + PostgreSQL

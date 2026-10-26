@@ -3,6 +3,8 @@
 //  Thuật toán chính có comment tiếng Việt.
 // ============================================================
 
+import { signInWithEmail, signUpWithEmail, signOut, getSession, getUser, onAuthStateChange } from './supabaseAuth.js';
+
 // ===== 1. Dữ liệu tướng (dùng thẳng link ảnh, không fetch/canvas) =====
 const HEROES_DATA = [
     { "name": "Tamyn", "imgUrl": "https://lienquan.garena.vn/wp-content/uploads/2026/07/SeaTalk_IMG_20260722_163230-1.jpg" },
@@ -2216,6 +2218,170 @@ $('stopLiveBtn').addEventListener('click', () => {
     $('goLiveBtn').textContent = 'Tạo phiên live';
 });
 
+// ===== Auth (Supabase Authentication) =====
+let currentUser = null;
+let authMode = 'signin'; // 'signin' hoặc 'signup'
+
+async function updateAuthUI() {
+    const loggedOutDiv = $('authLoggedOut');
+    const loggedInDiv = $('authLoggedIn');
+    const userEmailSpan = $('userEmail');
+    
+    if (!loggedOutDiv || !loggedInDiv) return;
+    
+    currentUser = await getUser();
+    
+    if (currentUser) {
+        loggedOutDiv.hidden = true;
+        loggedInDiv.hidden = false;
+        if (userEmailSpan) {
+            userEmailSpan.textContent = currentUser.email;
+        }
+    } else {
+        loggedOutDiv.hidden = false;
+        loggedInDiv.hidden = true;
+    }
+}
+
+function initAuth() {
+    // Mở modal auth
+    const openAuthBtn = $('openAuthBtn');
+    if (openAuthBtn) {
+        openAuthBtn.addEventListener('click', () => {
+            const authModal = $('authModal');
+            if (authModal) authModal.hidden = false;
+            authMode = 'signin';
+            $('authModalTitle').textContent = 'Đăng nhập';
+            $('authSubmitBtn').textContent = 'Đăng nhập';
+            $('authMessage').hidden = true;
+            $('authMessage').textContent = '';
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === 'signin');
+            });
+        });
+    }
+    
+    // Đóng modal auth
+    const authModalClose = $('authModalClose');
+    if (authModalClose) {
+        authModalClose.addEventListener('click', () => {
+            const authModal = $('authModal');
+            if (authModal) authModal.hidden = true;
+            $('authMessage').hidden = true;
+            $('authForm').reset();
+        });
+    }
+    const authModal = $('authModal');
+    if (authModal) {
+        authModal.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                authModal.hidden = true;
+                $('authMessage').hidden = true;
+                $('authForm').reset();
+            }
+        });
+    }
+    
+    // Chuyển tab
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            authMode = tab.dataset.tab;
+            if (authMode === 'signin') {
+                $('authModalTitle').textContent = 'Đăng nhập';
+                $('authSubmitBtn').textContent = 'Đăng nhập';
+            } else {
+                $('authModalTitle').textContent = 'Đăng ký';
+                $('authSubmitBtn').textContent = 'Đăng ký';
+            }
+            $('authMessage').hidden = true;
+            $('authMessage').textContent = '';
+        });
+    });
+    
+    // Xử lý form auth
+    const authForm = $('authForm');
+    if (authForm) {
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = $('authEmail').value;
+            const password = $('authPassword').value;
+            const submitBtn = $('authSubmitBtn');
+            const messageEl = $('authMessage');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = authMode === 'signin' ? 'Đang đăng nhập...' : 'Đang đăng ký...';
+            messageEl.hidden = true;
+            
+            try {
+                if (authMode === 'signin') {
+                    const { error } = await signInWithEmail(email, password);
+                    if (error) {
+                        throw error;
+                    }
+                    messageEl.textContent = 'Đăng nhập thành công!';
+                    messageEl.style.color = '#4ade80';
+                    messageEl.hidden = false;
+                    setTimeout(() => {
+                        const authModal = $('authModal');
+                        if (authModal) authModal.hidden = true;
+                        authForm.reset();
+                        updateAuthUI();
+                    }, 1000);
+                } else {
+                    const { error } = await signUpWithEmail(email, password);
+                    if (error) {
+                        throw error;
+                    }
+                    messageEl.textContent = 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.';
+                    messageEl.style.color = '#4ade80';
+                    messageEl.hidden = false;
+                    setTimeout(() => {
+                        authMode = 'signin';
+                        document.querySelectorAll('.auth-tab').forEach(t => {
+                            t.classList.toggle('active', t.dataset.tab === 'signin');
+                        });
+                        $('authModalTitle').textContent = 'Đăng nhập';
+                        $('authSubmitBtn').textContent = 'Đăng nhập';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Đăng nhập';
+                    }, 2000);
+                    return;
+                }
+            } catch (err) {
+                messageEl.textContent = err.message || 'Đã xảy ra lỗi';
+                messageEl.style.color = '#f87171';
+                messageEl.hidden = false;
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = authMode === 'signin' ? 'Đăng nhập' : 'Đăng ký';
+        });
+    }
+    
+    // Đăng xuất
+    const signOutBtn = $('signOutBtn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            const { error } = await signOut();
+            if (error) {
+                alert('Lỗi đăng xuất: ' + error.message);
+            } else {
+                updateAuthUI();
+            }
+        });
+    }
+    
+    // Lắng nghe thay đổi auth state
+    onAuthStateChange((event, session) => {
+        updateAuthUI();
+    });
+    
+    // Cập nhật UI lần đầu
+    updateAuthUI();
+}
+
 // ===== 25. Init =====
 // ===== Xuất members.json (chỉ phần thành viên: tên + tier + avatar) =====
 function exportMembers() {
@@ -2285,6 +2451,9 @@ $('reloadDataBtn').addEventListener('click', () => {
 });
 
 function init() {
+    // Init auth
+    initAuth();
+    
     // Cleanup old localStorage key from previous hash implementation (1-time)
     const oldHash = localStorage.getItem('lq_admin_hash');
     if (oldHash) {

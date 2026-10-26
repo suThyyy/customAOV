@@ -25,7 +25,18 @@
                     <p>Liên Quân Mobile / Team Randomizer</p>
                 </div>
             </div>
-            <p class="tagline" id="tagline">Đang chuẩn bị đấu trường...</p>
+            <div class="header-actions">
+                <p class="tagline" id="tagline">Đang chuẩn bị đấu trường...</p>
+                <div class="auth-section">
+                    <div id="authLoggedOut">
+                        <button id="openAuthBtn" class="auth-btn" type="button">Đăng nhập / Đăng ký</button>
+                    </div>
+                    <div id="authLoggedIn" hidden>
+                        <span class="user-info" id="userEmail"></span>
+                        <button id="signOutBtn" class="auth-btn secondary" type="button">Đăng xuất</button>
+                    </div>
+                </div>
+            </div>
         </header>
         <main class="workspace">
             <aside class="control-rail" id="controlRail" aria-label="Cấu hình trận đấu">
@@ -143,9 +154,30 @@
     <div class="modal hidden" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-box"><h3 id="modalTitle"></h3><div id="modalBody"></div><button class="ghost-btn" id="modalClose" type="button">Đóng</button></div></div>
     <div class="modal hidden" id="elimModal" role="dialog" aria-modal="true" aria-labelledby="elimTitle"><div class="modal-box"><h3 id="elimTitle">Chọn người bị loại</h3><p class="elim-sub">Có <b id="elimCount"></b> người muốn chơi, cần loại <b id="elimNeed"></b> người. Số phận định đoạt.</p><div id="elimGrid" class="elim-grid"></div><button id="elimDoneBtn" class="ghost-btn" type="button" hidden>Bắt đầu bốc thăm</button></div></div>
     <div class="modal hidden" id="liveModal" role="dialog" aria-modal="true" aria-labelledby="liveModalTitle"><div class="modal-box"><h3 id="liveModalTitle">Link xem live</h3><p class="modal-copy">Chia sẻ link này để bạn bè xem phiên bốc thăm theo thời gian thực.</p><input type="text" id="liveLinkInput" readonly class="live-link-input" aria-label="Link xem live"><div class="modal-actions"><button id="copyLiveLinkBtn" type="button">Sao chép link</button><button class="ghost-btn" id="liveModalClose" type="button">Đóng</button></div></div></div>
+    <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+        <div class="modal-box auth-modal">
+            <h3 id="authModalTitle">Đăng nhập / Đăng ký</h3>
+            <p class="auth-modal-sub">Đăng nhập bằng Supabase Authentication</p>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="signin" type="button">Đăng nhập</button>
+                <button class="auth-tab" data-tab="signup" type="button">Đăng ký</button>
+            </div>
+            <form id="authForm" class="auth-form">
+                <label class="auth-label" for="authEmail">Email</label>
+                <input type="email" id="authEmail" class="auth-input" placeholder="email@example.com" autocomplete="email" required>
+                <label class="auth-label" for="authPassword">Mật khẩu</label>
+                <input type="password" id="authPassword" class="auth-input" placeholder="Nhập mật khẩu" autocomplete="current-password" minlength="6" required>
+                <p id="authMessage" class="auth-message" hidden></p>
+                <div class="auth-form-actions">
+                    <button type="submit" id="authSubmitBtn" class="auth-submit">Đăng nhập</button>
+                    <button type="button" class="ghost-btn" id="authModalClose">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <audio id="spinMusic" src="nhac-xo-so.mp3" loop preload="auto"></audio>
     <section id="viewerArea" class="viewer-area" hidden><div class="viewer-header"><div><span class="section-kicker">Theo dõi trực tiếp</span><h2 id="viewerTitle">Đang kết nối phiên live...</h2></div><span id="viewerStatusBadge" class="live-badge" hidden>LIVE</span></div><div id="viewerContent" class="viewer-content"></div></section>
     <script src="randomizer-core.js?v=1"></script>
-    <script src="script.js?v=8"></script>
+    <script type="module" src="script.js?v=9"></script>
 </body>
 </html>

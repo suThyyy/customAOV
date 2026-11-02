@@ -31,6 +31,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,.h
 .auth-form{display:grid;gap:10px}
 .auth-label{color:#afbec1;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .auth-input{min-height:40px;padding:0 12px;font-size:13px}
+.auth-password-field{position:relative;min-width:0}
+.auth-password-field .auth-input{width:100%;padding-right:42px}
+.auth-password-field .auth-password-toggle{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:30px;height:30px;min-height:0;padding:5px;border:0;background:transparent;color:var(--muted);cursor:pointer;box-shadow:none}
+.auth-password-field .auth-password-toggle:hover{color:var(--accent-strong);background:var(--accent-soft)}
+.auth-password-toggle svg{width:18px;height:18px;display:block}
 .auth-message{font-size:11px;text-align:center;padding:8px;border-radius:var(--radius);background:rgba(15,31,40,.7)}
 .auth-form-actions{display:flex;gap:8px;margin-top:6px}
 .auth-form-actions>*{flex:1}

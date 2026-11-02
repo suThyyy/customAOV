@@ -1,3 +1,4 @@
+import { setupOtpAuth } from './auth-ui.js';
 // ============================================================
 //  Bốc Team Liên Quân - script.js
 //  Thuật toán chính có comment tiếng Việt.
@@ -2244,123 +2245,7 @@ async function updateAuthUI() {
 }
 
 function initAuth() {
-    // Mở modal auth
-    const openAuthBtn = $('openAuthBtn');
-    if (openAuthBtn) {
-        openAuthBtn.addEventListener('click', () => {
-            const authModal = $('authModal');
-            if (authModal) authModal.hidden = false;
-            authMode = 'signin';
-            $('authModalTitle').textContent = 'Đăng nhập';
-            $('authSubmitBtn').textContent = 'Đăng nhập';
-            $('authMessage').hidden = true;
-            $('authMessage').textContent = '';
-            document.querySelectorAll('.auth-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.tab === 'signin');
-            });
-        });
-    }
-    
-    // Đóng modal auth
-    const authModalClose = $('authModalClose');
-    if (authModalClose) {
-        authModalClose.addEventListener('click', () => {
-            const authModal = $('authModal');
-            if (authModal) authModal.hidden = true;
-            $('authMessage').hidden = true;
-            $('authForm').reset();
-        });
-    }
-    const authModal = $('authModal');
-    if (authModal) {
-        authModal.addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                authModal.hidden = true;
-                $('authMessage').hidden = true;
-                $('authForm').reset();
-            }
-        });
-    }
-    
-    // Chuyển tab
-    document.querySelectorAll('.auth-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            authMode = tab.dataset.tab;
-            if (authMode === 'signin') {
-                $('authModalTitle').textContent = 'Đăng nhập';
-                $('authSubmitBtn').textContent = 'Đăng nhập';
-            } else {
-                $('authModalTitle').textContent = 'Đăng ký';
-                $('authSubmitBtn').textContent = 'Đăng ký';
-            }
-            $('authMessage').hidden = true;
-            $('authMessage').textContent = '';
-        });
-    });
-    
-    // Xử lý form auth
-    const authForm = $('authForm');
-    if (authForm) {
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = $('authEmail').value;
-            const password = $('authPassword').value;
-            const submitBtn = $('authSubmitBtn');
-            const messageEl = $('authMessage');
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = authMode === 'signin' ? 'Đang đăng nhập...' : 'Đang đăng ký...';
-            messageEl.hidden = true;
-            
-            try {
-                if (authMode === 'signin') {
-                    const { error } = await signInWithEmail(email, password);
-                    if (error) {
-                        throw error;
-                    }
-                    messageEl.textContent = 'Đăng nhập thành công!';
-                    messageEl.style.color = '#4ade80';
-                    messageEl.hidden = false;
-                    setTimeout(() => {
-                        const authModal = $('authModal');
-                        if (authModal) authModal.hidden = true;
-                        authForm.reset();
-                        updateAuthUI();
-                    }, 1000);
-                } else {
-                    const { error } = await signUpWithEmail(email, password);
-                    if (error) {
-                        throw error;
-                    }
-                    messageEl.textContent = 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.';
-                    messageEl.style.color = '#4ade80';
-                    messageEl.hidden = false;
-                    setTimeout(() => {
-                        authMode = 'signin';
-                        document.querySelectorAll('.auth-tab').forEach(t => {
-                            t.classList.toggle('active', t.dataset.tab === 'signin');
-                        });
-                        $('authModalTitle').textContent = 'Đăng nhập';
-                        $('authSubmitBtn').textContent = 'Đăng nhập';
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Đăng nhập';
-                    }, 2000);
-                    return;
-                }
-            } catch (err) {
-                messageEl.textContent = err.message || 'Đã xảy ra lỗi';
-                messageEl.style.color = '#f87171';
-                messageEl.hidden = false;
-            }
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = authMode === 'signin' ? 'Đăng nhập' : 'Đăng ký';
-        });
-    }
-    
-    // Đăng xuất
+    setupOtpAuth(updateAuthUI);
     const signOutBtn = $('signOutBtn');
     if (signOutBtn) {
         signOutBtn.addEventListener('click', async () => {
@@ -2375,7 +2260,7 @@ function initAuth() {
     
     // Lắng nghe thay đổi auth state
     onAuthStateChange((event, session) => {
-        updateAuthUI();
+        setTimeout(() => updateAuthUI(), 0);
     });
     
     // Cập nhật UI lần đầu

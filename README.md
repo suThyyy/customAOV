@@ -1,4 +1,29 @@
 # CUSTOMAOV
+
+## Xác thực email bằng OTP (Supabase)
+
+Trang chính dùng đăng nhập email/mật khẩu. Sau đăng ký, người dùng nhập mã
+OTP trong modal để xác nhận email và tạo phiên đăng nhập. Tài khoản chưa
+xác nhận email có thể quay lại bước này từ form đăng nhập và gửi lại mã.
+
+Trong Supabase Dashboard:
+
+- Bật **Confirm email** cho Email provider.
+- Trong email template **Confirm signup**, hiển thị mã bằng
+  `{{ .Token }}` (ví dụ: `<p>Mã xác thực: {{ .Token }}</p>`).
+  Nếu template chỉ có `{{ .ConfirmationURL }}`, email sẽ chỉ chứa liên kết.
+- Độ dài mã và thời gian hết hạn do Supabase quyết định; giao diện nhận mã
+  số từ 6 đến 10 chữ số. Gửi lại có thời gian chờ 60 giây ở giao diện;
+  giới hạn thực tế vẫn do Supabase kiểm soát.
+
+Luồng này xác nhận email khi đăng ký, không yêu cầu OTP ở mỗi lần đăng nhập
+và không phải xác thực hai yếu tố. `auth-test.html` là trang thử nghiệm cũ;
+luồng OTP hiện nằm trong modal của `index.html`.
+
+Kiểm tra tự động: `node --test tests/*.test.js`.
+Kiểm tra thực tế: đăng ký email mới, nhập sai/đúng mã, gửi lại mã,
+đăng xuất rồi đăng nhập lại; thử đăng nhập tài khoản chưa xác nhận email.
+
 ## Project Overview & Vision
 
 **Version:** 0.1 — Draft  

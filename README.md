@@ -1,147 +1,130 @@
-# CUSTOMAOV
-## Project Overview & Vision
+# CustomAOV
 
-**Version:** 0.1 — Draft  
-**Updated:** 16/10/2026  
-**Status:** Proposal / Internal Discussion
+**A community-driven platform for organizing Arena of Valor custom matches.**
 
----
+CustomAOV là dự án phát triển nền tảng hỗ trợ tổ chức và quản lý các trận đấu Custom 5v5 trong **Liên Quân Mobile (Arena of Valor)**.
 
-## 1. Project Overview
+Khởi đầu từ công cụ chia đội ngẫu nhiên, CustomAOV hướng đến xây dựng một sân chơi cộng đồng thuận tiện, công bằng, minh bạch và có tính cạnh tranh, nơi người chơi có thể tham gia Custom, theo dõi lịch sử thi đấu và tích lũy thành tích thực tế.
 
-**CustomAOV** là dự án phát triển nền tảng hỗ trợ tổ chức và quản lý các trận đấu Custom 5v5 trong Liên Quân Mobile (Arena of Valor).
+**Website:** https://suthyyy.github.io/customAOV/
 
-Dự án bắt đầu từ một website bốc thăm chia đội, giúp người tổ chức lựa chọn người chơi, phân chia đội hình, random vị trí và tướng, đồng thời công bố kết quả một cách trực quan.
+## 1. Current Features — Phase 1
 
-### Bối cảnh và vấn đề
+**Status: MVP / Internal Testing**
 
-Hiện nay, nhiều nhóm Custom tổ chức trận đấu thông qua Discord, TikTok hoặc các cộng đồng riêng. Việc quản lý danh sách, chia đội và theo dõi kết quả thường được thực hiện thủ công, đôi khi phải sử dụng Excel hoặc phụ thuộc vào kinh nghiệm của người tổ chức.
+- **Player Management:** Thêm, sửa, xóa, quản lý danh sách người chơi, Tier và Rank.
+- **Team Balancing:** Chia đội ngẫu nhiên, cân bằng theo Skill (5 Tier) hoặc Rank (32 bậc).
+- **Role & Hero Assignment:** Phân chia vị trí và lựa chọn/random tướng.
+- **Result Reveal:** Công bố đội hình bằng các hiệu ứng trực quan.
+- **Live Share:** Chia sẻ kết quả chia đội theo thời gian thực.
+- **Local History:** Lưu lịch sử bốc thăm và hỗ trợ import/export dữ liệu.
 
-Điều này có thể dẫn đến việc chia đội thiếu nhất quán, mất thời gian, khó đánh giá sự cân bằng và thiếu dữ liệu để quản lý các trận đấu lâu dài.
+Thuật toán hiện tại sử dụng điểm quy đổi từ Tier hoặc Rank để tìm kiếm các đội hình tương đối cân bằng. Đây chưa phải hệ thống đánh giá trình độ dựa trên dữ liệu thi đấu thực tế.
 
-**CustomAOV hướng đến việc giải quyết những vấn đề đó**, bắt đầu bằng một công cụ chia đội thuận tiện và từng bước mở rộng thành nền tảng quản lý hoạt động Custom.
-
-### Đối tượng sử dụng
-
-- **Organizer:** Người tổ chức và điều phối các trận Custom.
-- **Player:** Người tham gia thi đấu, theo dõi đội hình, kết quả và thành tích cá nhân.
-- **Community Admin:** Người quản lý cộng đồng, thành viên, sự kiện và giải đấu.
-
----
+**Current Tech Stack:** HTML, CSS, JavaScript, localStorage, Firebase Realtime Database và GitHub Pages.
 
 ## 2. Product Vision
 
-**Xây dựng CustomAOV trở thành một nền tảng hỗ trợ tổ chức, quản lý và phát triển cộng đồng Custom Liên Quân Mobile, nơi người chơi có thể kết nối, thi đấu, theo dõi thành tích và tham gia các hoạt động cạnh tranh một cách thuận tiện, minh bạch và có hệ thống.**
+CustomAOV hướng đến ba nhóm người dùng:
 
-Về lâu dài, dự án hướng đến ba giá trị chính:
-
-- **Đối với người tổ chức:** Đơn giản hóa việc quản lý người chơi, chia đội, tổ chức trận đấu và sự kiện.
-- **Đối với người chơi:** Xây dựng hồ sơ, lưu trữ lịch sử thi đấu, thống kê hiệu suất và ghi nhận thành tích theo thời gian.
-- **Đối với cộng đồng:** Hình thành môi trường Custom có tổ chức, tăng tính minh bạch, hỗ trợ định danh người chơi và hạn chế các hành vi gian lận hoặc smurf khi có đủ dữ liệu và cơ chế xác minh.
-
-Dự án được định hướng phát triển theo từng giai đoạn, dựa trên nhu cầu thực tế, nguồn lực của nhóm và khả năng vận hành lâu dài.
-
----
-
-## 3. Current Product — Phase 1
-
-**Trạng thái: MVP đã hoàn thiện các chức năng cốt lõi, đang vận hành và kiểm thử nội bộ.**
-
-CustomAOV hiện hỗ trợ:
-
-| Module | Chức năng |
+| Nhóm | Vai trò |
 |---|---|
-| Player Management | Xem, Thêm, Sửa, Xóa, ON/OFF, đổi avatar, chỉnh Tier/Rank và lựa chọn người chơi |
-| Random Balancing | Chia ngẫu nhiên thành hai đội 5v5 |
-| Skill-Based Balancing | Chia đội theo 5 Tier, phù hợp với nhóm đã biết kỹ năng của nhau |
-| Rank-Based Balancing | Chia đội theo 32 bậc Rank, phù hợp khi chưa có dữ liệu về người chơi |
-| Role & Hero Assignment | Phân chia vị trí, lựa chọn hoặc random tướng |
-| Result Reveal | Công bố đội hình qua Hộp bí ẩn hoặc Vòng quay số phận |
-| Live Share | Chia sẻ kết quả bốc thăm theo thời gian thực |
-| Local Data & History | Lưu dữ liệu trên trình duyệt, lịch sử bốc thăm và import/export JSON |
+| **Super Admin** | Đội ngũ CustomAOV, quản trị toàn bộ nền tảng |
+| **Community Admin** | TikToker, Streamer, KOL được cấp tài khoản quản lý cộng đồng riêng |
+| **User** | Người chơi đăng ký tài khoản, tham gia cộng đồng và các trận Custom |
 
-Thuật toán cân bằng hiện sử dụng điểm sức mạnh quy đổi từ Tier hoặc Rank, tìm kiếm các tổ hợp đội hình đáp ứng ngưỡng cân bằng và lựa chọn ngẫu nhiên giữa các phương án phù hợp.
+### Community & Match Organization
 
-Đây là cơ chế cân bằng dựa trên điểm quy ước, chưa phải hệ thống đánh giá năng lực thực tế hay dự đoán xác suất chiến thắng.
+- Người chơi đăng ký tài khoản CustomAOV qua email hoặc số điện thoại khi được hỗ trợ.
+- Tham gia một hoặc nhiều cộng đồng của các Streamer/KOL.
+- Community Admin có thể quản lý thành viên, phê duyệt hoặc từ chối yêu cầu tham gia theo cấu hình cộng đồng.
+- Host tổ chức trận Custom bằng cách chia sẻ link đăng ký hoặc tìm kiếm, lựa chọn người chơi trực tiếp từ cộng đồng.
+- Hệ thống hỗ trợ chia đội và tổ chức các trận Casual, Competitive hoặc Tournament theo phạm vi phát triển từng giai đoạn.
 
-### Technical Snapshot
+Các chức năng chia đội cơ bản vẫn được định hướng sử dụng mà không bắt buộc đăng nhập.
 
-- **Frontend:** HTML, CSS, JavaScript.
-- **Business Logic:** Randomizer Core.
-- **Data Storage:** localStorage.
-- **Realtime:** Firebase Realtime Database cho Live Share.
-- **Hosting:** GitHub Pages.
+## 3. Match History & Player Statistics
 
-Website: https://suthyyy.github.io/customAOV/  
-Repository: https://github.com/suThyyy/customAOV
+CustomAOV định hướng **chỉ ghi nhận thành tích từ các trận đấu được tổ chức thông qua nền tảng**, không đồng bộ toàn bộ lịch sử đấu của tài khoản Liên Quân.
 
-**Giới hạn hiện tại:** Chưa có tài khoản và cơ sở dữ liệu tập trung. Firebase Live Share đang sử dụng cơ chế cũ, cần nâng cấp phân quyền trước khi mở rộng công khai.
+Thành tích sẽ hỗ trợ cả thống kê tổng hợp và thống kê riêng theo chế độ Casual/Competitive.
+
+### Proposed Match Flow
+
+1. **Team Setup:** Host chọn 10 người, chia đội và xác định chế độ thi đấu trên CustomAOV.
+2. **Gameplay:** Người chơi vào Liên Quân và thi đấu bình thường.
+3. **Result Submission:** Sau trận, Host chọn lane và tướng thực tế của từng người, sau đó gửi yêu cầu đồng bộ.
+4. **Match Retrieval:** Backend CustomAOV tìm kiếm và truy xuất Match Details từ nguồn dữ liệu khả dụng.
+5. **Validation & Mapping:** Đối chiếu trận đấu, đội hình, tướng và người tham gia với dữ liệu CustomAOV.
+6. **Match History:** Lưu kết quả và các chỉ số hợp lệ vào PostgreSQL, ghi nhận thống kê cá nhân cho những người chơi có tài khoản được liên kết.
+
+Dữ liệu mục tiêu bao gồm Win/Loss, Hero, Lane, KDA, MVP, điểm trận, vàng, sát thương, chống chịu, trang bị và các chỉ số khác khi có thể truy xuất.
+
+Người chưa có tài khoản CustomAOV vẫn có thể tham gia trận đấu, nhưng không tích lũy thành tích cá nhân trên nền tảng.
+
+### Match Data Retrieval — R&D
+
+Garena hiện chưa có API công khai được nhóm xác minh là phù hợp để CustomAOV truy xuất Match Details. Dự án đang xem xét hai hướng:
+
+**Option A — Third-party Integration**
+
+Nghiên cứu hoặc thuê ngoài dịch vụ/API có khả năng cung cấp dữ liệu lịch sử và chi tiết trận đấu, với các tiêu chí về tính chính xác, quyền truy cập, độ ổn định và khả năng sử dụng lâu dài.
+
+**Option B — In-house Integration**
+
+Nghiên cứu phát triển dịch vụ truy vấn dữ liệu từ lịch sử đấu có thể truy cập hợp lệ.
+
+Luồng dự kiến:
+
+`Player Profile → Match History → Match Details → Data Mapping → CustomAOV Database`
+
+Hệ thống có thể thử tra cứu lần lượt những người tham gia trận có lịch sử công khai và đã đồng ý sử dụng dữ liệu, dừng khi tìm được đúng trận và dữ liệu đủ để đối chiếu.
+
+Một tài khoản game phục vụ nghiên cứu có thể được sử dụng để kiểm tra khả năng xem lịch sử công khai, nhưng không mặc định có quyền truy cập API nội bộ hoặc dữ liệu bị ẩn.
+
+**Current Status:** Cả hai hướng đều đang ở mức nghiên cứu khả thi (R&D), chưa có API tích hợp được xác nhận hoạt động. Nếu chưa có nguồn truy xuất phù hợp, hệ thống có thể sử dụng phương án nhập kết quả và bằng chứng trận đấu để dự phòng.
+
+## 4. Development Roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| **Phase 1** | Team Randomizer, Skill/Rank Balancing, Live Share | MVP / Internal Testing |
+| **Phase 2.1** | PostgreSQL, Supabase Auth, Account & Game Profile | In Development |
+| **Phase 2.2** | Community Management, Membership, Custom Rooms | Planned |
+| **Phase 2.3** | Match Results, Match History, Player Statistics | R&D / Planned |
+| **Phase 3** | Data-driven Team Balancing dựa trên thành tích thi đấu | Future |
+| **Phase 4** | Tournament Management, BO1/BO3/BO5, Standings | Future |
+| **Phase 5** | Ecosystem, Partnerships & Monetization | Exploratory |
+
+Roadmap có thể được điều chỉnh dựa trên phản hồi người dùng, nguồn lực và tính khả thi kỹ thuật.
+
+## 5. Technical Direction
+
+**Current:** Vanilla JavaScript, localStorage, Firebase Live Share, GitHub Pages.
+
+**Planned:**
+- **Database:** PostgreSQL.
+- **Authentication & Backend Services:** Supabase.
+- **Frontend:** Kế thừa hệ thống hiện tại, cân nhắc React + TypeScript + Vite khi phù hợp.
+- **Match Data:** Backend integration thông qua nguồn dữ liệu được xác minh.
+- **Realtime:** Đánh giá phương án tiếp tục sử dụng hoặc chuyển đổi từ Firebase khi có nhu cầu thực tế.
+
+Các quyết định kỹ thuật được triển khai theo từng milestone, ưu tiên giữ ổn định tính năng hiện có và tránh thay đổi kiến trúc không cần thiết.
+
+## 6. Development & Collaboration
+
+- **GitHub:** Source code, Pull Requests và code review.
+- **Linear:** Backlog, issues, milestones và tiến độ.
+- **AI Coding Agents:** Hỗ trợ phân tích yêu cầu, triển khai, kiểm thử và review theo phạm vi task.
+
+Các quy định kỹ thuật và hướng dẫn agent được quản lý trong repository khi cần thiết.
+
+## Project Direction
+
+**Build a better Custom experience — fairer teams, stronger communities, and meaningful match history.**
+
+CustomAOV ưu tiên giá trị thực tế cho người tổ chức và người chơi. Những cơ hội mở rộng như hợp tác cộng đồng, esports và các mô hình dịch vụ mới được xem là tiềm năng phát triển, không phải điều kiện quyết định thành công của dự án.
 
 ---
 
-## 4. Product Roadmap
-
-### Phase 1 — Team Randomizer MVP
-
-**Status: Functionally Complete / Internal Operation**
-
-Hoàn thiện công cụ chia đội 5v5 với các chế độ Random, Skill-Based và Rank-Based, kết hợp quản lý người chơi, random vị trí/tướng và Live Share.
-
-Trọng tâm tiếp theo là vận hành thực tế, ghi nhận phản hồi, tối ưu trải nghiệm và xử lý các lỗi phát sinh.
-
-### Phase 2 — Account, Profile & Match Management
-
-**Status: Proposed**
-
-Xây dựng nền tảng dữ liệu và quản lý người dùng, bao gồm:
-
-- Database, backend và hệ thống đăng ký/đăng nhập.
-- Hồ sơ người dùng và người chơi, vị trí sở trường, Rank và thông tin liên quan.
-- Quản lý trận đấu, đội hình, kết quả thắng/thua và lịch sử tham gia.
-- Thống kê KDA, hiệu suất theo từng lane và từng chế độ Custom (vui vẻ hoặc thi đấu cạnh tranh).
-- Cho phép người dùng có tài khoản tham gia phòng qua link thay vì phải nhập thủ công.
-- Nâng cấp bảo mật, phân quyền và cơ chế vận hành Live Share.
-
-Các chức năng chia đội cơ bản dự kiến vẫn có thể sử dụng mà không bắt buộc đăng nhập.
-
-### Phase 3 — Advanced Team Balancing
-
-**Status: Future Direction**
-
-Nghiên cứu cơ chế cân bằng đội hình dựa trên dữ liệu thi đấu thực tế thay vì chủ yếu phụ thuộc vào Rank hoặc đánh giá chủ quan của người tổ chức.
-
-Hệ thống có thể xem xét lịch sử thắng/thua, KDA, vị trí sở trường và hiệu suất trong các trận Custom để xây dựng chỉ số đánh giá kỹ năng phù hợp.
-
-Mục tiêu là cải thiện chất lượng chia đội dựa trên dữ liệu tích lũy, không mặc định rằng một chỉ số đơn lẻ phản ánh chính xác năng lực người chơi.
-
-### Phase 4 — Tournament Management
-
-**Status: Future Direction**
-
-Phát triển các công cụ tổ chức giải đấu Custom, bao gồm quản lý đội tham gia, lịch thi đấu, nhánh đấu, thể thức BO1/BO3/BO5, kết quả và bảng xếp hạng.
-
-### Phase 5 — Monetization & Ecosystem
-
-**Status: Exploratory**
-
-Nghiên cứu khả năng vận hành bền vững và thương mại hóa khi sản phẩm có đủ người dùng và nhu cầu thực tế.
-
-Các hướng tiềm năng gồm tính năng nâng cao dành cho organizer, hỗ trợ tổ chức sự kiện, hợp tác cộng đồng, tài trợ và tích hợp dịch vụ thanh toán khi phù hợp.
-
-Những tính năng liên quan đến giải thưởng, thanh toán hoặc rút tiền chỉ được xem xét sau khi đánh giá yêu cầu pháp lý và khả năng vận hành.
-
----
-
-## 5. Next Steps & Development Direction
-
-Trong ngắn hạn, nhóm tập trung **vận hành Phase 1 với người dùng thực tế** để đánh giá tính ổn định, sự thuận tiện và nhu cầu mở rộng.
-
-Song song, cần thống nhất cách phối hợp phát triển, quy trình Git, quyền quản lý repository, Firebase và hoạt động triển khai.
-
-Sau khi Phase 1 vận hành ổn định, nhóm sẽ bắt đầu phân tích nghiệp vụ Phase 2, ưu tiên thiết kế dữ liệu, tài khoản, hồ sơ người chơi và hệ thống quản lý trận đấu trước khi triển khai backend.
-
-**Định hướng phát triển:**
-
-*Bắt đầu từ một công cụ hữu ích, xây dựng dựa trên nhu cầu thực tế và từng bước phát triển thành nền tảng phục vụ cộng đồng Custom Liên Quân Mobile.*
-
----
+*CustomAOV is an independent community project and is not officially affiliated with or endorsed by Garena.*

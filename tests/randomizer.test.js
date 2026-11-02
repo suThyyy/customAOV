@@ -103,7 +103,9 @@ function loadImplementation() {
     context.globalThis = context;
 
     // Prevent application startup from loading external members during tests.
-    const testSource = coreSource + '\n' + source.replace(/\ninit\(\);\s*$/, '\n');
+    const testSource = coreSource + '\n' + source
+        .replace(/^import .*;\r?\n/gm, '')
+        .replace(/\ninit\(\);\s*$/, '\n');
     const expose = `
         globalThis.__randomizer = {
             shuffle,

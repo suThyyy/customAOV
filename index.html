@@ -166,8 +166,23 @@
                 <label class="auth-label" for="authEmail">Email</label>
                 <input type="email" id="authEmail" class="auth-input" placeholder="email@example.com" autocomplete="email" required>
                 <label class="auth-label" for="authPassword">Mật khẩu</label>
-                <input type="password" id="authPassword" class="auth-input" placeholder="Nhập mật khẩu" autocomplete="current-password" minlength="6" required>
-                <p id="authMessage" class="auth-message" hidden></p>
+                <div id="authPasswordField" class="auth-password-field">
+                    <input type="password" id="authPassword" class="auth-input" placeholder="Nhập mật khẩu" autocomplete="current-password" minlength="6" required>
+                    <button type="button" id="authPasswordToggle" class="auth-password-toggle" aria-controls="authPassword" aria-pressed="false" aria-label="Hiện mật khẩu"></button>
+                </div>
+                <label class="auth-label" for="authPasswordConfirm" hidden>Nhập lại mật khẩu</label>
+                <div id="authPasswordConfirmField" class="auth-password-field" hidden>
+                    <input type="password" id="authPasswordConfirm" class="auth-input" placeholder="Nhập lại mật khẩu" autocomplete="new-password" minlength="6" hidden disabled>
+                    <button type="button" id="authConfirmToggle" class="auth-password-toggle" aria-controls="authPasswordConfirm" aria-pressed="false" aria-label="Hiện mật khẩu nhập lại" hidden></button>
+                </div>
+                <div id="authOtpFields" hidden>
+                    <p id="authOtpHint" class="auth-modal-sub"></p>
+                    <label class="auth-label" for="authOtp">Mã xác thực OTP</label>
+                    <input type="text" id="authOtp" class="auth-input" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" minlength="6" maxlength="10" placeholder="Nhập mã trong email" disabled>
+                    <button type="button" id="authResendBtn" class="ghost-btn">Gửi lại mã</button>
+                    <button type="button" id="authBackBtn" class="ghost-btn">Dùng email khác / Đăng nhập</button>
+                </div>
+                <p id="authMessage" class="auth-message" role="status" aria-live="polite" hidden></p>
                 <div class="auth-form-actions">
                     <button type="submit" id="authSubmitBtn" class="auth-submit">Đăng nhập</button>
                     <button type="button" class="ghost-btn" id="authModalClose">Hủy</button>

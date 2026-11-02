@@ -5,6 +5,24 @@ const SUPABASE_ANON_KEY = 'sb_publishable_by1AFTB0JOce8OqBlVEOEw__9fYSa7z'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+/** Xác nhận email bằng mã OTP; Supabase tạo session khi mã hợp lệ. */
+export async function verifyEmailOtp(email, token) {
+    try {
+        return await supabase.auth.verifyOtp({ email: email.trim(), token: token.trim(), type: 'email' })
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
+/** Gửi lại mã xác nhận cho tài khoản đã đăng ký. */
+export async function resendSignupOtp(email) {
+    try {
+        return await supabase.auth.resend({ email: email.trim(), type: 'signup' })
+    } catch (error) {
+        return { data: null, error }
+    }
+}
+
 /**
  * Đăng ký tài khoản mới với email và mật khẩu
  */

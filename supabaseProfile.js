@@ -4,10 +4,11 @@ const ACCOUNT_PROFILE_FIELDS = ['id', 'display_name', 'avatar_url', 'bio', 'role
 const ACCOUNT_PROFILE_WRITABLE_FIELDS = ['display_name', 'avatar_url', 'bio'];
 const GAME_PROFILE_FIELDS = [
     'id', 'user_id', 'ingame_name', 'game_uid', 'current_tier', 'current_rank',
-    'main_roles', 'system_mmr', 'created_at'
+    'main_roles', 'system_mmr', 'uid_changed_at', 'uid_change_available_at', 'created_at'
 ];
-const GAME_PROFILE_WRITABLE_FIELDS = [
-    'ingame_name', 'game_uid', 'current_tier', 'current_rank', 'main_roles', 'system_mmr'
+const LEGACY_GAME_PROFILE_FIELDS = [
+    'id', 'user_id', 'ingame_name', 'game_uid', 'current_tier', 'current_rank',
+    'main_roles', 'system_mmr', 'created_at'
 ];
 
 function errorResponse(message) {
@@ -56,11 +57,22 @@ export function createProfileApi({ client = supabase, getCurrentUser = getUser }
         .eq('id', user.id)
         .single();
 
-    const readGameProfileForUser = user => client
-        .from('game_profiles')
-        .select(GAME_PROFILE_FIELDS.join(', '))
-        .eq('user_id', user.id)
-        .single();
+    const readGameProfileForUser = async user => {
+        const result = await client
+            .from('game_profiles')
+            .select(GAME_PROFILE_FIELDS.join(', '))
+            .eq('user_id', user.id)
+            .single();
+        if (result.error?.code !== '42703') return result;
+
+        // Keep existing environments readable until the HUY-8 migration is
+        // reviewed and applied. UID changes never use this fallback.
+        return client
+            .from('game_profiles')
+            .select(LEGACY_GAME_PROFILE_FIELDS.join(', '))
+            .eq('user_id', user.id)
+            .single();
+    };
 
     const readAccountProfile = async () => {
         const user = await requireCurrentUser(getCurrentUser);
@@ -119,23 +131,14 @@ export function createProfileApi({ client = supabase, getCurrentUser = getUser }
             .single();
     };
 
-    const updateGameProfile = async changes => {
+    const requestGameUidChange = async gameUid => {
         const user = await requireCurrentUser(getCurrentUser);
         if (!user) return errorResponse('Authentication required');
-
-        let patch;
-        try {
-            patch = pickWritableFields(changes, GAME_PROFILE_WRITABLE_FIELDS, 'game profile');
-        } catch (error) {
-            return errorResponse(error.message);
+        if (typeof gameUid !== 'string' || gameUid.trim() === '') {
+            return errorResponse('Game UID is required');
         }
 
-        return client
-            .from('game_profiles')
-            .update(patch)
-            .eq('user_id', user.id)
-            .select(GAME_PROFILE_FIELDS.join(', '))
-            .single();
+        return client.rpc('request_game_uid_change', { new_game_uid: gameUid.trim() });
     };
 
     return {
@@ -144,7 +147,7 @@ export function createProfileApi({ client = supabase, getCurrentUser = getUser }
         readPublicGameProfile,
         readMyProfiles,
         updateAccountProfile,
-        updateGameProfile
+        requestGameUidChange
     };
 }
 

@@ -60,10 +60,34 @@ test('profile API rejects client-controlled row identifiers on updates', async (
     const client = fakeClient();
     const api = loadProfileApi({ client });
     const account = await api.updateAccountProfile({ id: 'user-b', display_name: 'A' });
-    const game = await api.updateGameProfile({ user_id: 'user-b', ingame_name: 'B' });
     assert.match(account.error.message, /unsupported account profile field/i);
-    assert.match(game.error.message, /unsupported game profile field/i);
+    assert.equal(api.updateGameProfile, undefined);
     assert.equal(client.calls.some(call => call.operation === 'update'), false);
+});
+
+test('profile API exposes no direct game profile update for system-managed fields', async () => {
+    const client = fakeClient();
+    const api = loadProfileApi({ client });
+    assert.equal(api.updateGameProfile, undefined);
+    assert.equal(client.calls.some(call => call.operation === 'update'), false);
+});
+
+test('profile API falls back to legacy read fields before HUY-8 migration is applied', async () => {
+    const calls = [];
+    const client = {
+        from: table => ({
+            select(fields) { calls.push({ operation: 'select', table, fields }); return this; },
+            eq(field, value) { calls.push({ operation: 'eq', table, field, value }); return this; },
+            single: async () => calls.filter(call => call.operation === 'select').at(-1)?.fields?.includes('uid_changed_at')
+                ? { data: null, error: { code: '42703' } }
+                : { data: { game_uid: null }, error: null }
+        })
+    };
+    const api = loadProfileApi({ client });
+    const result = await api.readMyGameProfile();
+    assert.equal(result.error, null);
+    assert.equal(calls.filter(call => call.operation === 'select').length, 2);
+    assert.equal(calls.filter(call => call.operation === 'select').at(-1).fields.includes('uid_changed_at'), false);
 });
 
 test('public game profile read validates its target id', async () => {
@@ -77,7 +101,7 @@ test('public game profile read validates its target id', async () => {
 test('unauthenticated profile updates do not call the database client', async () => {
     const client = fakeClient();
     const api = loadProfileApi({ client, user: null });
-    const result = await api.updateGameProfile({ ingame_name: 'A' });
+    const result = await api.requestGameUidChange('123');
     assert.match(result.error.message, /authentication required/i);
     assert.equal(client.calls.length, 0);
 });

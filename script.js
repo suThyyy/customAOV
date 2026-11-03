@@ -7,6 +7,7 @@ import { createAuthIntegration } from './auth-integration.js';
 
 import { signOut, getUser, onAuthStateChange } from './supabaseAuth.js';
 import { profileApi } from './supabaseProfile.js';
+import { createProfileUI } from './profile-ui.js';
 
 // ===== 1. Dữ liệu tướng (dùng thẳng link ảnh, không fetch/canvas) =====
 const HEROES_DATA = [
@@ -2274,6 +2275,7 @@ function legacyInitAuth() {
 // application entrypoint uses the race-safe integration implementation below.
 let currentProfiles = null;
 let authIntegration = null;
+let profileUI = null;
 
 function renderIntegratedAuthState(authState) {
     const loggedOutDiv = $('authLoggedOut');
@@ -2283,6 +2285,7 @@ function renderIntegratedAuthState(authState) {
 
     currentUser = authState.user;
     currentProfiles = authState.profiles;
+    if (profileUI) profileUI.setAuthState(authState);
     loggedOutDiv.hidden = Boolean(currentUser);
     loggedInDiv.hidden = !currentUser;
     if (userEmailSpan) userEmailSpan.textContent = currentUser?.email || '';
@@ -2295,6 +2298,10 @@ async function updateAuthUI() {
 }
 
 function initAuth() {
+    profileUI = createProfileUI({
+        profileApi,
+        onProfileUpdated: profiles => { currentProfiles = profiles; }
+    });
     authIntegration = createAuthIntegration({
         getUser,
         onAuthStateChange,

@@ -1,10 +1,12 @@
 import { setupOtpAuth } from './auth-ui.js';
+import { createAuthIntegration } from './auth-integration.js';
 // ============================================================
 //  Bốc Team Liên Quân - script.js
 //  Thuật toán chính có comment tiếng Việt.
 // ============================================================
 
-import { signInWithEmail, signUpWithEmail, signOut, getSession, getUser, onAuthStateChange } from './supabaseAuth.js';
+import { signOut, getUser, onAuthStateChange } from './supabaseAuth.js';
+import { profileApi } from './supabaseProfile.js';
 
 // ===== 1. Dữ liệu tướng (dùng thẳng link ảnh, không fetch/canvas) =====
 const HEROES_DATA = [
@@ -2219,11 +2221,11 @@ $('stopLiveBtn').addEventListener('click', () => {
     $('goLiveBtn').textContent = 'Tạo phiên live';
 });
 
-// ===== Auth (Supabase Authentication) =====
+  // ===== Auth (Supabase Authentication) =====
 let currentUser = null;
 let authMode = 'signin'; // 'signin' hoặc 'signup'
 
-async function updateAuthUI() {
+async function legacyUpdateAuthUI() {
     const loggedOutDiv = $('authLoggedOut');
     const loggedInDiv = $('authLoggedIn');
     const userEmailSpan = $('userEmail');
@@ -2244,8 +2246,8 @@ async function updateAuthUI() {
     }
 }
 
-function initAuth() {
-    setupOtpAuth(updateAuthUI);
+function legacyInitAuth() {
+    setupOtpAuth(legacyUpdateAuthUI);
     const signOutBtn = $('signOutBtn');
     if (signOutBtn) {
         signOutBtn.addEventListener('click', async () => {
@@ -2260,11 +2262,62 @@ function initAuth() {
     
     // Lắng nghe thay đổi auth state
     onAuthStateChange((event, session) => {
-        setTimeout(() => updateAuthUI(), 0);
+        setTimeout(() => legacyUpdateAuthUI(), 0);
     });
     
     // Cập nhật UI lần đầu
-    updateAuthUI();
+    legacyUpdateAuthUI();
+}
+
+// HUY-7 integration layer: profile state follows the active Supabase session.
+// This declaration intentionally appears after the legacy auth helpers so the
+// application entrypoint uses the race-safe integration implementation below.
+let currentProfiles = null;
+let authIntegration = null;
+
+function renderIntegratedAuthState(authState) {
+    const loggedOutDiv = $('authLoggedOut');
+    const loggedInDiv = $('authLoggedIn');
+    const userEmailSpan = $('userEmail');
+    if (!loggedOutDiv || !loggedInDiv) return;
+
+    currentUser = authState.user;
+    currentProfiles = authState.profiles;
+    loggedOutDiv.hidden = Boolean(currentUser);
+    loggedInDiv.hidden = !currentUser;
+    if (userEmailSpan) userEmailSpan.textContent = currentUser?.email || '';
+}
+
+async function updateAuthUI() {
+    const user = await getUser();
+    if (authIntegration) return authIntegration.sync(user);
+    renderIntegratedAuthState({ user, profiles: null });
+}
+
+function initAuth() {
+    authIntegration = createAuthIntegration({
+        getUser,
+        onAuthStateChange,
+        profileApi,
+        onStateChange: renderIntegratedAuthState,
+        onError: error => console.warn('Profile sync failed:', error)
+    });
+
+    setupOtpAuth(updateAuthUI);
+    const signOutBtn = $('signOutBtn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            const { error } = await signOut();
+            if (error) {
+                alert('Đăng xuất thất bại: ' + error.message);
+            } else {
+                await authIntegration.sync(null);
+            }
+        });
+    }
+
+    // Do not block the guest-mode randomizer while auth/profile state loads.
+    void authIntegration.initialize();
 }
 
 // ===== 25. Init =====

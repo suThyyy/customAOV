@@ -3,15 +3,16 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function loadProfileApi({ user = { id: 'user-a' }, client } = {}) {
+function loadProfileApi({ user = { id: 'user-a' }, client, getCurrentUser } = {}) {
     const source = fs.readFileSync('supabaseProfile.js', 'utf8')
         .replace(/^import .*\r?\n/, '')
         .replace(/export function/g, 'function')
         .replace(/export const profileApi/g, 'const profileApi');
-    const context = { supabase: client, getUser: async () => user, console };
+    const resolveUser = getCurrentUser || (async () => user);
+    const context = { supabase: client, getUser: resolveUser, console };
     vm.createContext(context);
     vm.runInContext(`${source}\nthis.createProfileApi = createProfileApi;`, context);
-    return context.createProfileApi({ client, getCurrentUser: async () => user });
+    return context.createProfileApi({ client, getCurrentUser: resolveUser });
 }
 
 function fakeClient() {
@@ -27,12 +28,17 @@ function fakeClient() {
 
 test('profile API reads only the authenticated user profile and returns game profile data', async () => {
     const client = fakeClient();
-    const api = loadProfileApi({ client });
+    let userLookups = 0;
+    const api = loadProfileApi({
+        client,
+        getCurrentUser: async () => { userLookups++; return { id: 'user-a' }; }
+    });
     await api.readMyProfiles();
     assert.deepEqual(client.calls.filter(call => call.operation === 'eq'), [
         { operation: 'eq', table: 'profiles', field: 'id', value: 'user-a' },
         { operation: 'eq', table: 'game_profiles', field: 'user_id', value: 'user-a' }
     ]);
+    assert.equal(userLookups, 1);
 });
 
 test('profile API rejects role changes before sending an update', async () => {

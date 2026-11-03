@@ -50,26 +50,28 @@ async function requireCurrentUser(getCurrentUser) {
  * administration is never sent through the browser client.
  */
 export function createProfileApi({ client = supabase, getCurrentUser = getUser } = {}) {
+    const readAccountProfileForUser = user => client
+        .from('profiles')
+        .select(ACCOUNT_PROFILE_FIELDS.join(', '))
+        .eq('id', user.id)
+        .single();
+
+    const readGameProfileForUser = user => client
+        .from('game_profiles')
+        .select(GAME_PROFILE_FIELDS.join(', '))
+        .eq('user_id', user.id)
+        .single();
+
     const readAccountProfile = async () => {
         const user = await requireCurrentUser(getCurrentUser);
         if (!user) return errorResponse('Authentication required');
-
-        return client
-            .from('profiles')
-            .select(ACCOUNT_PROFILE_FIELDS.join(', '))
-            .eq('id', user.id)
-            .single();
+        return readAccountProfileForUser(user);
     };
 
     const readMyGameProfile = async () => {
         const user = await requireCurrentUser(getCurrentUser);
         if (!user) return errorResponse('Authentication required');
-
-        return client
-            .from('game_profiles')
-            .select(GAME_PROFILE_FIELDS.join(', '))
-            .eq('user_id', user.id)
-            .single();
+        return readGameProfileForUser(user);
     };
 
     const readPublicGameProfile = async userId => {
@@ -85,7 +87,13 @@ export function createProfileApi({ client = supabase, getCurrentUser = getUser }
     };
 
     const readMyProfiles = async () => {
-        const [account, game] = await Promise.all([readAccountProfile(), readMyGameProfile()]);
+        const user = await requireCurrentUser(getCurrentUser);
+        if (!user) return errorResponse('Authentication required');
+
+        const [account, game] = await Promise.all([
+            readAccountProfileForUser(user),
+            readGameProfileForUser(user)
+        ]);
         return {
             data: account.error || game.error ? null : { account: account.data, game: game.data },
             error: account.error || game.error || null

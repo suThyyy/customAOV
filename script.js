@@ -1,5 +1,8 @@
 import { setupOtpAuth } from './auth-ui.js';
 import { createAuthIntegration } from './auth-integration.js';
+import { createRoomUI } from './room-ui.js';
+import { roomApi } from './roomApi.js';
+import { supabase } from './supabaseAuth.js';
 // ============================================================
 //  Bốc Team Liên Quân - script.js
 //  Thuật toán chính có comment tiếng Việt.
@@ -1362,16 +1365,25 @@ function getBalanceScore(player) {
     return Number(state.tierScore[player.tier]) || 1;
 }
 
-function draw() {
+async function draw() {
     ensureAudio();
-    resetPickedMarks();
-    const active = state.players.filter(p => p.active !== false);
+    const isRoomDraw = Boolean(roomUI?.isActive());
+    if (isRoomDraw && !(await roomUI.prepareForDraw())) {
+        alert('Cần ít nhất 10 người trong Queue và một Room đang mở.');
+        return;
+    }
+    if (!isRoomDraw) resetPickedMarks();
+    const active = isRoomDraw ? roomUI.getSelectedPlayers() : state.players.filter(p => p.active !== false);
     if (active.length < 10) {
         alert(`Cần đúng 10 người đang chơi (5v5), hiện có ${active.length} người! Thiếu ${10 - active.length} người.`);
         return;
     }
     if (active.length > 10) {
         alert(`Còn ${active.length} người đang chơi (dư ${active.length - 10}). Bấm nút "Chọn 10 người" để loại bớt trước.`);
+        return;
+    }
+    if (false && state.settings.teamMode === 'random' && isRoomDraw) {
+        alert('Open Room hỗ trợ cân theo Mâm hoặc Rank.');
         return;
     }
     if (state.settings.teamMode === 'rank') {
@@ -1381,7 +1393,11 @@ function draw() {
             return;
         }
     }
-    doDraw(active);
+    if (isRoomDraw && state.settings.teamMode !== 'random' && active.some(player => player.skill_mode !== state.settings.teamMode)) {
+        alert('Hãy chọn đúng loại Tier/Rank đang dùng trong cấu hình chia đội.');
+        return;
+    }
+    await doDraw(active, isRoomDraw);
 }
 
 // Loại người xuống còn 10 khi có > 10 người muốn chơi (troll số phận)
@@ -1489,7 +1505,7 @@ function startElimination(players) {
     eliminateNext();
 }
 
-function doDraw(players) {
+async function doDraw(players, isRoomDraw=false) {
     const s = state.settings;
     let split;
     if (s.teamMode === 'random') split = splitRandom(players);
@@ -1518,13 +1534,23 @@ function doDraw(players) {
 
     currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning, balanceMode: s.teamMode };
 
-    // Live sync: push teams lên Firebase
-    if (isHost && currentSessionId) {
+    if (isRoomDraw) {
+        const persisted = await roomUI.persistDrawResult(currentResult);
+        if (!persisted) {
+            currentResult = null;
+            return;
+        }
+    }
+
+    // Live sync: push teams lên Firebase for Quick Randomizer only.
+    if (!isRoomDraw && isHost && currentSessionId) {
         syncTeams(currentResult);
     }
 
-    // lưu kết quả vào localStorage (session - F5 không mất)
-    try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
+    // Room teams are persisted by Supabase; only Quick Randomizer uses this key.
+    if (!isRoomDraw) {
+        try { localStorage.setItem('lq_lastResult', JSON.stringify(currentResult)); } catch (e) {}
+    }
 
     // chế độ "không bốc tướng" → không cần slot quay, luôn dùng Hộp Bí Ẩn (cho gọn)
     if (s.revealMode === 'secretBox' || s.championMode === 'skip') renderSecretBox();
@@ -1549,7 +1575,7 @@ function renderSecretBox() {
 
 function teamColumnSecretBox(team, name, percent, side) {
     const cards = team.map((p) => `
-        <div class="flip-card" data-side="${side}" data-idx="${team.indexOf(p)}">
+        <div class="flip-card" data-side="${side}" data-idx="${team.indexOf(p)}" data-room-member-id="${roomUI?.isActive() ? escapeHtml(p.id || '') : ''}" draggable="${roomUI?.isActive() ? 'true' : 'false'}" tabindex="${roomUI?.isActive() ? '0' : '-1'}" aria-label="${roomUI?.isActive() ? `Chọn để đổi ${escapeHtml(p.name)}` : ''}">
             <div class="card-left">
                 <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>
@@ -1670,7 +1696,13 @@ function renderSlotMachine() {
         if (appended.has(p)) return;
         appended.add(p);
         const row = document.createElement('div');
-        row.className = 'sr-row is-arriving';
+        row.className = `sr-row is-arriving${roomUI?.isActive() ? ' room-swap-card' : ''}`;
+        if (roomUI?.isActive() && p.id) {
+            row.dataset.roomMemberId = p.id;
+            row.draggable = true;
+            row.tabIndex = 0;
+            row.setAttribute('aria-label', `Chọn để đổi ${p.name}`);
+        }
         row.innerHTML = `
             <span class="sr-avatar">${avatarHtml(p.avatar)}</span>
             <span class="sr-player"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(ROLE_LABELS[p.role] || 'Tự chọn vị trí')}</small></span>
@@ -2024,6 +2056,7 @@ function updateSetting(key, value, afterChange) {
     if (!candidate.ok) return;
     state.settings = candidate.value;
     saveState();
+    if (key === 'teamMode' && roomUI?.isActive() && value !== 'random') roomUI.setSkillMode(value);
     if (afterChange) afterChange();
 }
 document.querySelectorAll('input[name="teamMode"]').forEach(r => r.addEventListener('change', () => updateSetting('teamMode', r.value, renderSettings)));
@@ -2077,6 +2110,59 @@ redrawBtn.addEventListener('click', () => {
     draw();
 });
 
+let roomSwapSelection=null;
+async function applyRoomSwap(firstId, secondId) {
+    const response = await roomUI?.swapRoomPlayers(firstId, secondId);
+    if (!response || !currentResult) return;
+    let firstTeam = currentResult.teamA.findIndex(p => String(p.id) === String(firstId));
+    let secondTeam = currentResult.teamB.findIndex(p => String(p.id) === String(secondId));
+    let firstSide = 'a';
+    if (firstTeam < 0 || secondTeam < 0) {
+        firstTeam = currentResult.teamB.findIndex(p => String(p.id) === String(firstId));
+        secondTeam = currentResult.teamA.findIndex(p => String(p.id) === String(secondId));
+        firstSide = 'b';
+    }
+    if (firstTeam < 0 || secondTeam < 0) return;
+    if (firstSide === 'a') {
+        [currentResult.teamA[firstTeam], currentResult.teamB[secondTeam]] = [currentResult.teamB[secondTeam], currentResult.teamA[firstTeam]];
+    } else {
+        [currentResult.teamB[firstTeam], currentResult.teamA[secondTeam]] = [currentResult.teamA[secondTeam], currentResult.teamB[firstTeam]];
+    }
+    const firstCard = resultArea.querySelector(`[data-room-member-id="${CSS.escape(String(firstId))}"]`);
+    const secondCard = resultArea.querySelector(`[data-room-member-id="${CSS.escape(String(secondId))}"]`);
+    if (firstCard && secondCard && firstCard.parentElement && secondCard.parentElement) {
+        const firstParent = firstCard.parentElement;
+        const secondParent = secondCard.parentElement;
+        const firstMarker = firstCard.nextSibling;
+        const secondMarker = secondCard.nextSibling;
+        secondParent.insertBefore(firstCard, secondMarker);
+        firstParent.insertBefore(secondCard, firstMarker);
+    }
+    resultArea.querySelectorAll('.flip-card[data-room-member-id]').forEach(card => {
+        const side = card.closest('.team-col')?.querySelector('h3')?.textContent?.startsWith('🔵') ? 'a' : 'b';
+        card.dataset.side = side;
+        const cards = [...card.parentElement.querySelectorAll('.flip-card[data-room-member-id]')];
+        card.dataset.idx = String(cards.indexOf(card));
+    });
+}
+resultArea.addEventListener('dragstart', (e) => {
+    if (!roomUI?.isActive()) return;
+    const card=e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
+    if (card) e.dataTransfer?.setData('text/plain',card.dataset.roomMemberId);
+});
+resultArea.addEventListener('dragover', (e) => {
+    if (roomUI?.isActive() && e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) e.preventDefault();
+});
+resultArea.addEventListener('drop', (e) => {
+    if (!roomUI?.isActive()) return;
+    const targetCard=e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
+    const first=e.dataTransfer?.getData('text/plain');
+    if (targetCard && first && first!==targetCard.dataset.roomMemberId) {
+        e.preventDefault();
+        void applyRoomSwap(first,targetCard.dataset.roomMemberId);
+    }
+});
+
 // Result actions (event delegation)
 resultArea.addEventListener('click', (e) => {
     if (e.target.id === 'copyBtn') {
@@ -2106,6 +2192,16 @@ resultArea.addEventListener('click', (e) => {
         if (isHost && currentSessionId) {
             syncAllReveals(allReveals);
         }
+    } else if (roomUI?.isActive() && e.target.closest('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) {
+        const card=e.target.closest('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
+        if (!roomSwapSelection) {
+            roomSwapSelection=card.dataset.roomMemberId;
+            card.classList.add('room-swap-selected');
+            return;
+        }
+        const first=roomSwapSelection;roomSwapSelection=null;
+        document.querySelectorAll('.room-swap-selected').forEach(x=>x.classList.remove('room-swap-selected'));
+        if (first!==card.dataset.roomMemberId) void applyRoomSwap(first,card.dataset.roomMemberId);
     } else if (e.target.closest('.flip-card')) {
         const card = e.target.closest('.flip-card');
         if (card.classList.contains('flipped')) return;
@@ -2132,6 +2228,14 @@ resultArea.addEventListener('click', (e) => {
         const flipped = document.querySelectorAll('.flip-card.flipped').length;
         if (flipped === total) { fireConfetti(); playTada(); saveHistory(); }
     }
+});
+
+resultArea.addEventListener('keydown', (e) => {
+    if (!roomUI?.isActive() || !['Enter', ' '].includes(e.key)) return;
+    const card = e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
+    if (!card) return;
+    e.preventDefault();
+    card.click();
 });
 
 // Lật thẻ: hiện luôn tên tướng (thay dấu ??? trong dòng info)
@@ -2276,6 +2380,7 @@ function legacyInitAuth() {
 let currentProfiles = null;
 let authIntegration = null;
 let profileUI = null;
+let roomUI = null;
 
 function renderIntegratedAuthState(authState) {
     const loggedOutDiv = $('authLoggedOut');
@@ -2286,6 +2391,7 @@ function renderIntegratedAuthState(authState) {
     currentUser = authState.user;
     currentProfiles = authState.profiles;
     if (profileUI) profileUI.setAuthState(authState);
+    if (roomUI) roomUI.setAuthState(authState);
     loggedOutDiv.hidden = Boolean(currentUser);
     loggedInDiv.hidden = !currentUser;
     if (userEmailSpan) userEmailSpan.textContent = currentUser?.email || '';
@@ -2298,6 +2404,43 @@ async function updateAuthUI() {
 }
 
 function initAuth() {
+    const roomArea = $('openRoomArea');
+    if (roomArea) {
+        roomUI = createRoomUI({root:roomArea,api:roomApi,client:supabase,core:globalThis.CustomAOVRandomizer,
+            rankCatalog:RANK_CATALOG,tierCatalog:Object.entries(DEFAULT_TIER_SCORE).map(([id,score])=>({id,label:TIER_LABELS[id],score})),
+            onStateChange:()=>updateDrawStatus(),
+            onStart:async()=>{
+                if (currentResult && !(await roomUI.persistDrawResult(currentResult))) return;
+                await roomUI.startRound();
+            }});
+        const roomBtn=$('openRoomBtn');
+        const playerPanel=$('phase1PlayerPanel');
+        const drawConsole=document.querySelector('.draw-console');
+        const randomTeamMode=$('teamModeGroup')?.querySelector('input[value="random"]');
+        const roomUnsupportedPanels=[$('randomizerSettingsPanel'),$('randomizerChampionPanel')].filter(Boolean);
+        const setRoomMode=active=>{
+            roomArea.hidden=!active;
+            if(playerPanel)playerPanel.hidden=active;
+            if(drawConsole)drawConsole.hidden=false;
+            roomUnsupportedPanels.forEach(panel=>{
+                panel.classList.toggle('room-mode-panel',active);
+                panel.setAttribute('aria-disabled','false');
+            });
+            if(randomTeamMode)randomTeamMode.disabled=false;
+            document.body.classList.toggle('room-mode',active);
+            roomBtn.setAttribute('aria-expanded',String(active));
+            roomUI.setMode(active);
+            updateDrawStatus();
+            currentResult=null;
+            resultArea.replaceChildren();
+            resultArea.hidden=true;
+        };
+        if (new URL(location.href).searchParams.has('room')) setRoomMode(true);
+        roomBtn.addEventListener('click',()=>{
+            setRoomMode(roomArea.hidden);
+            if(!roomArea.hidden)roomArea.querySelector('h2')?.focus();
+        });
+    }
     profileUI = createProfileUI({
         profileApi,
         onProfileUpdated: profiles => { currentProfiles = profiles; }
@@ -2361,6 +2504,18 @@ async function loadDefaultMembers() {
 
 // Cập nhật dòng trạng thái trước nút bốc thăm:多少人 đang chơi + đủ/chưa
 function updateDrawStatus() {
+    if (roomUI?.isActive()) {
+        const selected=roomUI.getSelectedCount();
+        const waiting=roomUI.getWaitingCount();
+        const roundState=roomUI.getRoundState();
+        const usesQueue=['idle','ended'].includes(roundState);
+        const available=usesQueue?waiting:Math.max(selected,waiting);
+        const el=$('drawStatus');
+        el.textContent=usesQueue?`Đang chờ ${waiting}/10. ${waiting>=10?'Sẵn sàng bốc đội hình mới.':'Cần đủ 10 người để bốc lượt tiếp theo.'}`:`Đã chọn (${selected}/10). ${selected>=10?'Sẵn sàng bốc đội hình.':`Cần đủ 10, còn thiếu ${10-selected}.`}`;
+        el.style.color=available>=10?'#4ade80':'#fbbf24';
+        drawBtn.disabled=available<10;
+        return;
+    }
     const active = state.players.filter(p => p.active !== false);
     const el = $('drawStatus');
     if (active.length === 10) {

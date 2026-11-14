@@ -62,7 +62,9 @@ export function createRoomUI({root, api, client, rankCatalog, tierCatalog, onSta
         for(const b of root.querySelectorAll('button'))b.disabled=state.busy;
         if(!state.data){heading.textContent='Open Match Room';lastData=null;draftScope=null;draftSkills.clear();waiting.replaceChildren();selected.replaceChildren();members.replaceChildren();return;}
         const d=state.data,r=d.room,host=r.host_user_id===state.user?.id,open=r.status==='open',preparing=r.current_round_state==='preparing';
-        const nextDraftScope=`${r.id}:${r.current_round_no}`;
+        const draftRound=['idle','ended'].includes(r.current_round_state)
+            ? Number(r.current_round_no)+1 : Number(r.current_round_no);
+        const nextDraftScope=`${r.id}:${draftRound}`;
         if(draftScope!==null&&draftScope!==nextDraftScope)draftSkills.clear();
         draftScope=nextDraftScope;
         heading.textContent=`Room · Lượt ${r.current_round_no} · ${r.status} / ${r.current_round_state}`;invite.value=r.invite_code;

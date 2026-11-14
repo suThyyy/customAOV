@@ -26,8 +26,8 @@ The Phase 1 player list is replaced only inside the Room sidebar; `state.players
 `localStorage.lq_state`, Firebase Live Share, and Quick Randomizer history remain separate.
 
 Host Tier/Rank edits are draft-only while the Room is waiting. They are scoped by Room and
-round, cleared on account/Room/round changes, and are not presented as synchronized until
-the draw persists the lineup. Result cards and slot rows support Room swap selection with
+the upcoming round, survive the internal Prepare transition, clear on account/Room/round
+changes, and are not presented as synchronized until the draw persists the lineup. Result cards and slot rows support Room swap selection with
 drag/drop plus keyboard activation; the server RPC remains authoritative and rejects swaps
 outside the preparing state.
 
@@ -81,7 +81,7 @@ only be justified by a verified backend gap.
 
 ## Verification limits / dependencies
 
-Local validation on 2026-11-14: `node --test tests/*.test.js` — 116 passed, 0 failed.
+Local validation on 2026-11-14: `node --test tests/*.test.js` — 117 passed, 0 failed.
 JavaScript syntax and `git diff --check` passed. Chrome fake-service smoke passed with
 Host and Viewer clients sharing Realtime-style updates at actual viewports 1264px and
 500px under `/customAOV/`; it covers cross-client swap visibility, Host-control isolation,

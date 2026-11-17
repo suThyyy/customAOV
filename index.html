@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="assets/arena-battleground.png">
     <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/room.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -26,6 +27,7 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button id="openRoomBtn" class="auth-btn secondary" type="button" aria-expanded="false" aria-controls="openRoomArea">Open Match Room</button>
                 <p class="tagline" id="tagline">Đang chuẩn bị đấu trường...</p>
                 <div class="auth-section">
                     <div id="authLoggedOut">
@@ -42,7 +44,8 @@
         <main class="workspace">
             <aside class="control-rail" id="controlRail" aria-label="Cấu hình trận đấu">
                 <div class="rail-heading"><span>Thiết lập trận đấu</span><span class="rail-index">5V5</span><button id="railCloseBtn" class="rail-close-btn" type="button" aria-label="Ẩn bảng cấu hình">Thu gọn</button></div>
-                <section class="panel player-panel">
+                <section id="openRoomArea" aria-label="Open Match Room" hidden></section>
+                <section id="phase1PlayerPanel" class="panel player-panel">
                     <div class="section-heading">
                         <div><span class="section-kicker">Đội hình</span><h2>Danh sách chiến hữu <span class="count" id="playerCount" aria-live="polite"></span></h2></div>
                         <button id="pickTenBtn" class="ghost-btn pick-ten-btn" type="button">Chọn 10 người</button>
@@ -64,7 +67,7 @@
                     <button id="resetRankScoreBtn" class="ghost-btn reset-btn" type="button" hidden>Khôi phục điểm rank</button>
                     <div class="tier-score-grid" id="tierScoreGrid" hidden></div>
                 </section>
-                <section class="panel settings-panel">
+                <section id="randomizerSettingsPanel" class="panel settings-panel">
                     <div class="section-heading"><div><span class="section-kicker">Luật chia</span><h2>Cấu hình bốc thăm</h2></div></div>
                     <fieldset class="setting-row"><legend class="setting-label">Chia team</legend><div class="radio-group" id="teamModeGroup">
                         <label class="radio"><input type="radio" name="teamMode" value="random"><span>Random hoàn toàn</span></label>
@@ -92,7 +95,7 @@
                     </div></fieldset>
                     <div class="setting-row sound-row"><span class="setting-label">Âm thanh</span><label class="switch"><input type="checkbox" id="soundToggle" aria-label="Bật hoặc tắt âm thanh"><span class="slider"></span></label></div>
                 </section>
-                <section class="panel champion-panel">
+                <section id="randomizerChampionPanel" class="panel champion-panel">
                     <div class="section-heading"><div><span class="section-kicker">Bể tướng</span><h2>Chọn theo vị trí</h2></div><button id="resetPoolBtn" class="ghost-btn reset-btn" type="button">Khôi phục</button></div>
                     <p class="pool-hint">Chọn tướng cho vị trí đang mở. Thiết lập này chỉ dùng khi bốc tướng đúng vị trí. Đã chọn <b id="poolCount">0</b>.</p>
                     <div class="role-tabs" id="roleTabs" role="tablist" aria-label="Vị trí thi đấu">

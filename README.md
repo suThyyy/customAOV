@@ -1,8 +1,23 @@
 # CustomAOV
 
-CustomAOV là nền tảng cộng đồng để tổ chức, quản lý và ghi nhận các trận đấu Custom và giải đấu Liên Quân Mobile (Arena of Valor).
+Beyond Random Teams. Build Your Competitive Legacy.
 
-CustomAOV bắt đầu từ công cụ chia đội ngẫu nhiên và đang phát triển thành hệ thống hỗ trợ Host, người chơi, Viewer, cộng đồng và nhà tổ chức giải. Mục tiêu là tạo ra trải nghiệm thi đấu công bằng hơn, hồ sơ đáng tin cậy hơn và dữ liệu trận đấu có thể truy xuất theo nguồn gốc rõ ràng.
+CustomAOV là nền tảng cộng đồng dành cho người chơi Liên Quân Mobile, hướng đến việc tổ chức các trận đấu Custom, quản lý phòng, xây dựng giải đấu và ghi nhận thành tích thi đấu một cách minh bạch.
+Từ một công cụ chia đội 5v5, CustomAOV đang phát triển thành hệ sinh thái kết nối Players, Hosts, Streamers và Communities.
+
+Một nền tảng — Sáu trải nghiệm
+
+- Home: Khám phá phòng chơi, giải đấu và hoạt động cộng đồng.
+- Rooms: Tạo phòng, xếp hàng chờ, chia đội và tổ chức trận Custom.
+- Tournaments: Tổ chức giải đấu, đăng ký đội và quản lý nhánh đấu.
+- Leaderboards: Xếp hạng và vinh danh thành tích.
+- Communities: Xây dựng cộng đồng và tổ chức các hoạt động nội bộ.
+- Profiles: Hướng đến hồ sơ thi đấu có thể truy xuất, đối chiếu và xác minh dữ liệu.
+Our Vision
+- Chúng tôi tin rằng mỗi trận đấu Custom đều có thể mang lại nhiều giá trị hơn một kết quả thắng hoặc thua.
+- CustomAOV hướng đến một hệ thống nơi thành tích được ghi nhận theo nguồn dữ liệu rõ ràng, cộng đồng có thể tự tổ chức hoạt động và mỗi người chơi có một hành trình thi đấu đáng tin cậy.
+- Current Status: Active Development — React Migration & Supabase Integration.
+- CustomAOV là dự án cộng đồng độc lập, không trực thuộc hoặc được Garena chứng thực.
 
 **Website hiện tại:** <https://suthyyy.github.io/customAOV/>
 

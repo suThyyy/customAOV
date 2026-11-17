@@ -40,11 +40,11 @@ Không gian tổ chức trận Custom public/private với các vai trò Host, P
 - FIFO Queue với trạng thái Waiting/Selected;
 - chia đội theo Random, Tier hoặc Rank;
 - Prepare, Start, End, Next Round và Continue/Requeue;
-- Host kick, replace và quản lý thành viên;
+- Host kick, replace, swap và quản lý thành viên;
 - đồng bộ trạng thái qua Supabase Realtime;
 - lưu trạng thái phòng và đội hình qua PostgreSQL/RPC.
 
-**Trạng thái:** In Progress; Open Room và Queue đã có implementation trong repository hiện tại. Một số hành vi live multi-client, RLS và migration production vẫn cần được xác minh theo môi trường triển khai.
+**Trạng thái:** In Progress; Open Room và Queue đã có implementation trong repository hiện tại. Các Production migration cần cho Room qua HUY-11 đã APPLIED; metadata verification incremental đạt 5/5, gồm kiểm tra RPC ownership, SECURITY DEFINER, search_path và quyền EXECUTE theo role. Live multi-client, Realtime, browser E2E và concurrency/load QA vẫn cần hoàn tất.
 
 ### Tournaments
 
@@ -119,7 +119,6 @@ Profile là identity và performance module trung tâm trong dài hạn:
 
 ### In Progress / cần xác minh thêm
 
-- Xác nhận migration HUY-9/HUY-10/HUY-11 đã được apply đúng ở từng môi trường Supabase.
 - Live multi-client verification với dữ liệu staging.
 - Kiểm tra đầy đủ RLS, Realtime publication và concurrency trên PostgreSQL thật.
 - Hoàn thiện profile data flow và quy tắc dữ liệu lâu dài.
@@ -151,7 +150,6 @@ Các mục Exploratory chưa phải cam kết sản phẩm và không được c
 CustomAOV sẽ phân biệt rõ ba loại dữ liệu:
 
 | Loại dữ liệu | Ví dụ | Ý nghĩa |
-|---|---|---|
 | User-declared | Game UID, Tier/Rank do người chơi hoặc Host nhập | Thông tin do người dùng khai báo, chưa tự động xác minh |
 | Platform-recorded | Phòng, queue, thành viên, đội hình, thời điểm, Host-reported result | Dữ liệu do CustomAOV ghi nhận từ workflow của nền tảng |
 | Externally game-verified | Match ID, kết quả hoặc chỉ số được xác nhận từ nguồn game hợp lệ | Chỉ dùng khi có nguồn, quyền truy cập và quy trình đối chiếu đáng tin cậy |
@@ -179,7 +177,7 @@ Backend nghiệp vụ hiện tại gồm:
 - **Supabase Realtime** cho đồng bộ trạng thái Room;
 - **Firebase Realtime Database** cho Quick Randomizer Live Share hiện tại.
 
-Các SQL migration và verification script nằm trong [db/migrations](db/migrations) và [db/verification](db/verification). File trong repository không tự chứng minh migration đã được apply trên production.
+Các SQL migration và verification script nằm trong [db/migrations](db/migrations) và [db/verification](db/verification). PO đã xác nhận các Production migrations cần cho Room qua HUY-11 đã APPLIED; thông tin này được phân biệt với live behavioral, multi-client Realtime, browser E2E và concurrency/load QA.
 
 ### Application hiện tại
 
@@ -251,7 +249,7 @@ Khi kiểm tra live Supabase, chỉ sử dụng môi trường được phê duy
 
 - Randomizer balancing hiện dựa trên Tier/Rank score, chưa phải đánh giá trình độ từ match data thực tế.
 - Firebase vẫn là dependency của Quick Randomizer Live Share trong khi Room dùng Supabase Realtime.
-- Migration SQL cần được review và apply theo đúng thứ tự; repository không tự xác nhận trạng thái database từ xa.
+- Các migration cần cho Room qua HUY-11 đã được apply trên Production và đạt 5/5 metadata verification; không replay hoặc sửa migration đã áp dụng. Các migration tương lai vẫn phải được review và apply theo đúng thứ tự.
 - Live multi-client, PostgreSQL thật, RLS production và Realtime delivery cần được kiểm tra ở môi trường phù hợp.
 - Chưa có community backend, tournament backend, leaderboard production hoặc verified match history hoàn chỉnh trong `customAOV`.
 - Chưa có Garena API hoặc nguồn dữ liệu game bên ngoài được xác minh là có thể dùng lâu dài.

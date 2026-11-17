@@ -1,130 +1,283 @@
 # CustomAOV
 
-**A community-driven platform for organizing Arena of Valor custom matches.**
+CustomAOV là nền tảng cộng đồng để tổ chức, quản lý và ghi nhận các trận đấu Custom và giải đấu Liên Quân Mobile (Arena of Valor).
 
-CustomAOV là dự án phát triển nền tảng hỗ trợ tổ chức và quản lý các trận đấu Custom 5v5 trong **Liên Quân Mobile (Arena of Valor)**.
+CustomAOV bắt đầu từ công cụ chia đội ngẫu nhiên và đang phát triển thành hệ thống hỗ trợ Host, người chơi, Viewer, cộng đồng và nhà tổ chức giải. Mục tiêu là tạo ra trải nghiệm thi đấu công bằng hơn, hồ sơ đáng tin cậy hơn và dữ liệu trận đấu có thể truy xuất theo nguồn gốc rõ ràng.
 
-Khởi đầu từ công cụ chia đội ngẫu nhiên, CustomAOV hướng đến xây dựng một sân chơi cộng đồng thuận tiện, công bằng, minh bạch và có tính cạnh tranh, nơi người chơi có thể tham gia Custom, theo dõi lịch sử thi đấu và tích lũy thành tích thực tế.
+**Website hiện tại:** <https://suthyyy.github.io/customAOV/>
 
-**Website:** https://suthyyy.github.io/customAOV/
+> CustomAOV là dự án cộng đồng độc lập, không trực thuộc hoặc được Garena chứng thực.
 
-## 1. Current Features — Phase 1
+## 1. Tầm nhìn và nguyên tắc sản phẩm
 
-**Status: MVP / Internal Testing**
+CustomAOV hướng tới một nền tảng nơi người chơi có thể tìm trận, tham gia phòng, theo dõi kết quả, xây dựng hồ sơ và tham gia các cộng đồng hoặc giải đấu phù hợp.
 
-- **Player Management:** Thêm, sửa, xóa, quản lý danh sách người chơi, Tier và Rank.
-- **Team Balancing:** Chia đội ngẫu nhiên, cân bằng theo Skill (5 Tier) hoặc Rank (32 bậc).
-- **Role & Hero Assignment:** Phân chia vị trí và lựa chọn/random tướng.
-- **Result Reveal:** Công bố đội hình bằng các hiệu ứng trực quan.
-- **Live Share:** Chia sẻ kết quả chia đội theo thời gian thực.
-- **Local History:** Lưu lịch sử bốc thăm và hỗ trợ import/export dữ liệu.
+Các nguyên tắc dài hạn:
 
-Thuật toán hiện tại sử dụng điểm quy đổi từ Tier hoặc Rank để tìm kiếm các đội hình tương đối cân bằng. Đây chưa phải hệ thống đánh giá trình độ dựa trên dữ liệu thi đấu thực tế.
+- **Fair competition:** chia đội và tổ chức trận minh bạch, có quy tắc rõ ràng.
+- **Transparent records:** phân biệt dữ liệu do người dùng khai báo, dữ liệu hệ thống ghi nhận và dữ liệu được xác minh từ nguồn game bên ngoài.
+- **Trustworthy identity:** liên kết tài khoản nền tảng với thông tin game trong phạm vi có thể kiểm chứng.
+- **Reduced manipulation:** giảm khả năng smurfing và gian lận khi có đủ dữ liệu, quy tắc và cơ chế xác minh.
+- **Traceable results:** kết quả phải có người gửi, thời điểm, trận/phòng liên quan và trạng thái xác minh.
+- **Community-driven organization:** Host, Community Admin và nhà tổ chức có công cụ phù hợp với phạm vi quản lý của họ.
 
-**Current Tech Stack:** HTML, CSS, JavaScript, localStorage, Firebase Realtime Database và GitHub Pages.
+CustomAOV không mặc định coi một kết quả do Host báo cáo là kết quả đã được game xác minh.
 
-## 2. Product Vision
+## 2. Sáu module kinh doanh chính
 
-CustomAOV hướng đến ba nhóm người dùng:
+### Home
 
-| Nhóm | Vai trò |
-|---|---|
-| **Super Admin** | Đội ngũ CustomAOV, quản trị toàn bộ nền tảng |
-| **Community Admin** | TikToker, Streamer, KOL được cấp tài khoản quản lý cộng đồng riêng |
-| **User** | Người chơi đăng ký tài khoản, tham gia cộng đồng và các trận Custom |
+Dashboard và khu vực khám phá cho phòng nổi bật, giải đấu, hoạt động gần đây, quick tools, thông báo và các vị trí nội dung hoặc quảng bá trong tương lai.
 
-### Community & Match Organization
+**Trạng thái:** Planned. Phiên bản hiện tại ưu tiên Quick Randomizer và Open Room, chưa có Home platform đầy đủ.
 
-- Người chơi đăng ký tài khoản CustomAOV qua email hoặc số điện thoại khi được hỗ trợ.
-- Tham gia một hoặc nhiều cộng đồng của các Streamer/KOL.
-- Community Admin có thể quản lý thành viên, phê duyệt hoặc từ chối yêu cầu tham gia theo cấu hình cộng đồng.
-- Host tổ chức trận Custom bằng cách chia sẻ link đăng ký hoặc tìm kiếm, lựa chọn người chơi trực tiếp từ cộng đồng.
-- Hệ thống hỗ trợ chia đội và tổ chức các trận Casual, Competitive hoặc Tournament theo phạm vi phát triển từng giai đoạn.
+### Rooms
 
-Các chức năng chia đội cơ bản vẫn được định hướng sử dụng mà không bắt buộc đăng nhập.
+Không gian tổ chức trận Custom public/private với các vai trò Host, Player và Viewer:
 
-## 3. Match History & Player Statistics
+- tạo phòng và chia sẻ invite link;
+- Account Join và Host-added Player;
+- FIFO Queue với trạng thái Waiting/Selected;
+- chia đội theo Random, Tier hoặc Rank;
+- Prepare, Start, End, Next Round và Continue/Requeue;
+- Host kick, replace và quản lý thành viên;
+- đồng bộ trạng thái qua Supabase Realtime;
+- lưu trạng thái phòng và đội hình qua PostgreSQL/RPC.
 
-CustomAOV định hướng **chỉ ghi nhận thành tích từ các trận đấu được tổ chức thông qua nền tảng**, không đồng bộ toàn bộ lịch sử đấu của tài khoản Liên Quân.
+**Trạng thái:** In Progress; Open Room và Queue đã có implementation trong repository hiện tại. Một số hành vi live multi-client, RLS và migration production vẫn cần được xác minh theo môi trường triển khai.
 
-Thành tích sẽ hỗ trợ cả thống kê tổng hợp và thống kê riêng theo chế độ Casual/Competitive.
+### Tournaments
 
-### Proposed Match Flow
+Module cho việc tạo và điều hành giải đấu:
 
-1. **Team Setup:** Host chọn 10 người, chia đội và xác định chế độ thi đấu trên CustomAOV.
-2. **Gameplay:** Người chơi vào Liên Quân và thi đấu bình thường.
-3. **Result Submission:** Sau trận, Host chọn lane và tướng thực tế của từng người, sau đó gửi yêu cầu đồng bộ.
-4. **Match Retrieval:** Backend CustomAOV tìm kiếm và truy xuất Match Details từ nguồn dữ liệu khả dụng.
-5. **Validation & Mapping:** Đối chiếu trận đấu, đội hình, tướng và người tham gia với dữ liệu CustomAOV.
-6. **Match History:** Lưu kết quả và các chỉ số hợp lệ vào PostgreSQL, ghi nhận thống kê cá nhân cho những người chơi có tài khoản được liên kết.
+- tạo giải;
+- đăng ký đội;
+- duyệt hoặc từ chối đăng ký;
+- lịch thi đấu;
+- bracket;
+- báo cáo kết quả;
+- bảng xếp hạng và hồ sơ thành tích.
 
-Dữ liệu mục tiêu bao gồm Win/Loss, Hero, Lane, KDA, MVP, điểm trận, vàng, sát thương, chống chịu, trang bị và các chỉ số khác khi có thể truy xuất.
+**Trạng thái:** Planned. Chưa coi các màn hình hoặc mock ở repository `platform` là tính năng đã tích hợp vào CustomAOV.
 
-Người chưa có tài khoản CustomAOV vẫn có thể tham gia trận đấu, nhưng không tích lũy thành tích cá nhân trên nền tảng.
+### Leaderboards
 
-### Match Data Retrieval — R&D
+Bảng xếp hạng người chơi, đội và cộng đồng theo metric, mode, mùa giải hoặc khoảng thời gian.
 
-Garena hiện chưa có API công khai được nhóm xác minh là phù hợp để CustomAOV truy xuất Match Details. Dự án đang xem xét hai hướng:
+Mỗi bảng xếp hạng trong tương lai phải công bố:
 
-**Option A — Third-party Integration**
+- nguồn dữ liệu;
+- tiêu chí đủ điều kiện;
+- cách tính;
+- khoảng thời gian;
+- trạng thái xác minh của dữ liệu.
 
-Nghiên cứu hoặc thuê ngoài dịch vụ/API có khả năng cung cấp dữ liệu lịch sử và chi tiết trận đấu, với các tiêu chí về tính chính xác, quyền truy cập, độ ổn định và khả năng sử dụng lâu dài.
+**Trạng thái:** Planned. Chưa có leaderboard production.
 
-**Option B — In-house Integration**
+### Communities
 
-Nghiên cứu phát triển dịch vụ truy vấn dữ liệu từ lịch sử đấu có thể truy cập hợp lệ.
+Cộng đồng public/private với membership, role, phòng nội bộ, giải nội bộ và activity feed.
 
-Luồng dự kiến:
+**Trạng thái:** Planned. Role trong profile hiện tại không đồng nghĩa với hệ thống Community hoàn chỉnh.
 
-`Player Profile → Match History → Match Details → Data Mapping → CustomAOV Database`
+### Profiles
 
-Hệ thống có thể thử tra cứu lần lượt những người tham gia trận có lịch sử công khai và đã đồng ý sử dụng dữ liệu, dừng khi tìm được đúng trận và dữ liệu đủ để đối chiếu.
+Profile là identity và performance module trung tâm trong dài hạn:
 
-Một tài khoản game phục vụ nghiên cứu có thể được sử dụng để kiểm tra khả năng xem lịch sử công khai, nhưng không mặc định có quyền truy cập API nội bộ hoặc dữ liệu bị ẩn.
+- tài khoản CustomAOV;
+- display name, avatar, bio và role;
+- Game UID và thông tin game do người dùng cung cấp;
+- lịch sử tham gia;
+- thống kê;
+- match history;
+- dữ liệu đã được hệ thống ghi nhận hoặc xác minh.
 
-**Current Status:** Cả hai hướng đều đang ở mức nghiên cứu khả thi (R&D), chưa có API tích hợp được xác nhận hoạt động. Nếu chưa có nguồn truy xuất phù hợp, hệ thống có thể sử dụng phương án nhập kết quả và bằng chứng trận đấu để dự phòng.
+**Trạng thái:** In Progress. Supabase Auth, account profile, game profile, Game UID cooldown và các policy bảo vệ profile đã có implementation; match history và verified performance data chưa hoàn chỉnh.
 
-## 4. Development Roadmap
+## 3. Trạng thái implementation hiện tại
 
-| Phase | Scope | Status |
+### Implemented
+
+- Quick Randomizer cho 10 người chơi.
+- Chia đội Random.
+- Chia đội cân bằng theo Tier hoặc Rank.
+- Cấu hình score và balance level.
+- Phân role/lane và champion assignment theo cấu hình hiện tại.
+- Team reveal với secret box, slot-machine, âm thanh và hiệu ứng trực quan.
+- Local history và import/export dữ liệu Randomizer.
+- Quick Randomizer Live Share qua Firebase Realtime Database.
+- Supabase Auth với đăng ký, OTP và đăng nhập.
+- Account Profile và Game Profile cơ bản.
+- Open Match Room.
+- Invite link, Account Join và Host-added Player.
+- FIFO Queue và trạng thái Waiting/Selected.
+- Host permission, kick, requeue và replacement theo luật Room.
+- Prepare/Start/End/Next Round/Continue theo Room lifecycle hiện tại.
+- Lưu đội hình và thao tác Room qua RPC có kiểm tra quyền, lock và version.
+- Supabase Realtime cho các bảng Room.
+- Unit, integration, UI và migration-contract tests trong repository.
+
+### In Progress / cần xác minh thêm
+
+- Xác nhận migration HUY-9/HUY-10/HUY-11 đã được apply đúng ở từng môi trường Supabase.
+- Live multi-client verification với dữ liệu staging.
+- Kiểm tra đầy đủ RLS, Realtime publication và concurrency trên PostgreSQL thật.
+- Hoàn thiện profile data flow và quy tắc dữ liệu lâu dài.
+- Chuẩn bị migration frontend từng phần sang React + TypeScript.
+
+### Planned
+
+- Home/Dashboard và discovery.
+- Community membership và Community Admin tools.
+- Tournament creation, registration, bracket, scheduling và result reporting.
+- Leaderboards có provenance và eligibility rules.
+- Match history và player/team statistics từ các trận được tổ chức trên nền tảng.
+- Typed service adapters để frontend React dùng backend hiện tại.
+
+### Exploratory
+
+- Spectator API.
+- Live match integrations.
+- Third-party game-data partnerships.
+- Game account ownership verification.
+- Automatic match tracking.
+- Match ID lookup.
+- External game data và verified result pipeline.
+
+Các mục Exploratory chưa phải cam kết sản phẩm và không được coi là đã có API, quyền truy cập hoặc đối tác triển khai.
+
+## 4. Phân loại dữ liệu và mức độ xác minh
+
+CustomAOV sẽ phân biệt rõ ba loại dữ liệu:
+
+| Loại dữ liệu | Ví dụ | Ý nghĩa |
 |---|---|---|
-| **Phase 1** | Team Randomizer, Skill/Rank Balancing, Live Share | MVP / Internal Testing |
-| **Phase 2.1** | PostgreSQL, Supabase Auth, Account & Game Profile | In Development |
-| **Phase 2.2** | Community Management, Membership, Custom Rooms | Planned |
-| **Phase 2.3** | Match Results, Match History, Player Statistics | R&D / Planned |
-| **Phase 3** | Data-driven Team Balancing dựa trên thành tích thi đấu | Future |
-| **Phase 4** | Tournament Management, BO1/BO3/BO5, Standings | Future |
-| **Phase 5** | Ecosystem, Partnerships & Monetization | Exploratory |
+| User-declared | Game UID, Tier/Rank do người chơi hoặc Host nhập | Thông tin do người dùng khai báo, chưa tự động xác minh |
+| Platform-recorded | Phòng, queue, thành viên, đội hình, thời điểm, Host-reported result | Dữ liệu do CustomAOV ghi nhận từ workflow của nền tảng |
+| Externally game-verified | Match ID, kết quả hoặc chỉ số được xác nhận từ nguồn game hợp lệ | Chỉ dùng khi có nguồn, quyền truy cập và quy trình đối chiếu đáng tin cậy |
 
-Roadmap có thể được điều chỉnh dựa trên phản hồi người dùng, nguồn lực và tính khả thi kỹ thuật.
+Hiện tại CustomAOV chưa có bằng chứng rằng hệ thống có:
 
-## 5. Technical Direction
+- anti-smurf prevention hoàn chỉnh;
+- xác minh quyền sở hữu tài khoản game;
+- tự động lấy lịch sử trận;
+- Match ID lookup;
+- Garena API được xác nhận và cấp quyền;
+- authoritative game-result verification.
 
-**Current:** Vanilla JavaScript, localStorage, Firebase Live Share, GitHub Pages.
+Không được gắn nhãn “game-verified” cho kết quả chỉ do Host nhập.
 
-**Planned:**
-- **Database:** PostgreSQL.
-- **Authentication & Backend Services:** Supabase.
-- **Frontend:** Kế thừa hệ thống hiện tại, cân nhắc React + TypeScript + Vite khi phù hợp.
-- **Match Data:** Backend integration thông qua nguồn dữ liệu được xác minh.
-- **Realtime:** Đánh giá phương án tiếp tục sử dụng hoặc chuyển đổi từ Firebase khi có nhu cầu thực tế.
+## 5. Kiến trúc hiện tại và kiến trúc mục tiêu
 
-Các quyết định kỹ thuật được triển khai theo từng milestone, ưu tiên giữ ổn định tính năng hiện có và tránh thay đổi kiến trúc không cần thiết.
+### Business backend hiện tại
 
-## 6. Development & Collaboration
+Backend nghiệp vụ hiện tại gồm:
 
-- **GitHub:** Source code, Pull Requests và code review.
-- **Linear:** Backlog, issues, milestones và tiến độ.
-- **AI Coding Agents:** Hỗ trợ phân tích yêu cầu, triển khai, kiểm thử và review theo phạm vi task.
+- **Supabase Auth** cho identity và session;
+- **PostgreSQL** cho profile, Room, Queue và trạng thái đội hình;
+- **RPC và RLS** cho authorization, transaction boundary và các thao tác Room nhạy cảm;
+- **Supabase Realtime** cho đồng bộ trạng thái Room;
+- **Firebase Realtime Database** cho Quick Randomizer Live Share hiện tại.
 
-Các quy định kỹ thuật và hướng dẫn agent được quản lý trong repository khi cần thiết.
+Các SQL migration và verification script nằm trong [db/migrations](db/migrations) và [db/verification](db/verification). File trong repository không tự chứng minh migration đã được apply trên production.
 
-## Project Direction
+### Application hiện tại
 
-**Build a better Custom experience — fairer teams, stronger communities, and meaningful match history.**
+Frontend hiện tại là Vanilla JavaScript, HTML và CSS, được tổ chức quanh:
 
-CustomAOV ưu tiên giá trị thực tế cho người tổ chức và người chơi. Những cơ hội mở rộng như hợp tác cộng đồng, esports và các mô hình dịch vụ mới được xem là tiềm năng phát triển, không phải điều kiện quyết định thành công của dự án.
+- [script.js](script.js) cho application state, Randomizer và reveal UI;
+- [randomizer-core.js](randomizer-core.js) cho thuật toán chia đội;
+- [roomApi.js](roomApi.js), [room-api-core.js](room-api-core.js), [room-controller.js](room-controller.js) và [room-ui.js](room-ui.js) cho Open Room;
+- [supabaseAuth.js](supabaseAuth.js) và [supabaseProfile.js](supabaseProfile.js) cho Auth/Profile.
+
+Frontend static hiện được deploy theo hướng GitHub Pages.
+
+### Kiến trúc frontend mục tiêu
+
+Mục tiêu dài hạn là React + TypeScript + Vite, tái sử dụng và chuyển đổi có kiểm soát các ý tưởng UI từ repository `platform`.
+
+Nguyên tắc tích hợp:
+
+- React frontend kết nối tới Supabase hiện tại thông qua typed service adapters.
+- Supabase tiếp tục là authoritative source cho Auth, Room và Queue trong giai đoạn migration.
+- Không đưa vào production một hệ thống Auth, database hoặc Room song song chỉ vì frontend mới dùng framework khác.
+- Fastify/PostgreSQL/WebSocket backend trong `platform` chưa phải kiến trúc production được phê duyệt cho CustomAOV.
+
+## 6. Chiến lược migration frontend
+
+Migration sẽ theo từng module, không rewrite toàn bộ cùng lúc.
+
+1. Giữ `customAOV` làm business backend và product runtime đang hoạt động.
+2. Xây typed adapters cho Auth, Profile, Room snapshot và Realtime.
+3. Proof of concept React: login, đọc profile, đọc một Room và nhận cập nhật Realtime.
+4. Chuyển các màn ít rủi ro trước: Profile, Dashboard, Search và các màn đọc dữ liệu.
+5. Chuyển Tournament khi contract và data model đã được thống nhất.
+6. Chuyển Room UI sau khi chứng minh được FIFO, Host permission, Queue và Realtime parity.
+7. Chuyển Randomizer/battlefield/reveal cuối cùng vì đây là phần có coupling UI và animation cao nhất.
+
+Frontend hiện tại vẫn được giữ cho đến khi frontend mới đạt feature parity và vượt qua regression verification tương ứng.
+
+## 7. Roadmap
+
+| Giai đoạn | Phạm vi | Trạng thái |
+|---|---|---|
+| Foundation | Quick Randomizer, balancing, reveal, Live Share | Implemented / Internal Testing |
+| Identity | Supabase Auth, Account Profile, Game Profile, UID rules | In Progress |
+| Rooms | Open Room, Queue, Host controls, lifecycle, Realtime | In Progress |
+| Frontend migration | React shell, typed adapters, Profile/Dashboard/Discovery | Planned |
+| Communities | Community, membership, roles, internal activities | Planned |
+| Tournaments | Registration, administration, bracket, schedule, results | Planned |
+| Records | Platform-recorded match history and statistics | Planned |
+| Leaderboards | Rules-based rankings by mode, season and provenance | Planned |
+| External verification | Game-data integration, Match ID and verified results | Exploratory |
+
+Roadmap có thể thay đổi theo phản hồi người dùng, nguồn lực, kết quả kiểm chứng kỹ thuật và khả năng tiếp cận dữ liệu hợp lệ.
+
+## 8. Local development và tài liệu
+
+Đây là frontend static không có package manifest riêng trong repository hiện tại. Có thể chạy bằng một static HTTP server từ thư mục `customAOV`; không nên mở trực tiếp bằng `file://` vì module import và request của browser có thể bị chặn.
+
+Tài liệu kỹ thuật liên quan:
+
+- [docs/huy11-huy12-implementation.md](docs/huy11-huy12-implementation.md): kiến trúc và checklist Open Match Room.
+- [db/migrations](db/migrations): migration SQL theo từng milestone.
+- [db/verification](db/verification): preflight/postflight và các kiểm tra chỉ đọc.
+- [tests](tests): unit, integration, UI và live-test harness có cơ chế hạn chế write.
+- [thiet-ke-boc-tham-lien-quan-v2.md](thiet-ke-boc-tham-lien-quan-v2.md): thiết kế Randomizer và trải nghiệm chia đội.
+
+Khi kiểm tra live Supabase, chỉ sử dụng môi trường được phê duyệt, đọc kỹ safety guard trong test harness và không tự ý apply migration hoặc chạy write test trên production.
+
+## 9. Giới hạn và dependency hiện tại
+
+- Randomizer balancing hiện dựa trên Tier/Rank score, chưa phải đánh giá trình độ từ match data thực tế.
+- Firebase vẫn là dependency của Quick Randomizer Live Share trong khi Room dùng Supabase Realtime.
+- Migration SQL cần được review và apply theo đúng thứ tự; repository không tự xác nhận trạng thái database từ xa.
+- Live multi-client, PostgreSQL thật, RLS production và Realtime delivery cần được kiểm tra ở môi trường phù hợp.
+- Chưa có community backend, tournament backend, leaderboard production hoặc verified match history hoàn chỉnh trong `customAOV`.
+- Chưa có Garena API hoặc nguồn dữ liệu game bên ngoài được xác minh là có thể dùng lâu dài.
+- Tài khoản, Game UID, Tier/Rank và kết quả Host báo cáo không mặc nhiên là dữ liệu game đã xác minh.
+- UI migration không được làm gián đoạn Room/Queue đang hoạt động.
+
+## 10. Tương lai tích hợp và hợp tác
+
+Các hướng hợp tác hoặc tích hợp trong tương lai có thể bao gồm:
+
+- Community Admin, streamer và nhà tổ chức giải.
+- Đối tác cung cấp dữ liệu trận đấu hợp pháp và ổn định.
+- Spectator hoặc live match service.
+- Đối tác tổ chức esports và tournament.
+- Các nguồn xác minh identity hoặc game account phù hợp với quyền riêng tư và điều khoản dịch vụ.
+
+Mọi tích hợp bên ngoài phải được đánh giá theo quyền truy cập, tính chính xác, tính ổn định, khả năng truy xuất nguồn gốc, quyền riêng tư và điều khoản sử dụng. Không xem một hướng R&D là capability đã cam kết trước khi có proof of concept và verification rõ ràng.
+
+## 11. Đóng góp và cộng tác
+
+- **GitHub:** source code, pull request và code review.
+- **Linear:** backlog, issue và milestone.
+- **AI coding agents:** hỗ trợ phân tích, triển khai, kiểm thử và review trong phạm vi task được giao.
+
+Mọi thay đổi lớn về Auth, database, Room lifecycle, Realtime hoặc frontend migration cần được ghi nhận bằng tài liệu và regression verification tương ứng.
 
 ---
 
-*CustomAOV is an independent community project and is not officially affiliated with or endorsed by Garena.*
+**Build a better Custom experience — fairer teams, stronger communities, and meaningful match history.**

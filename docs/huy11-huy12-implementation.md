@@ -19,12 +19,15 @@ Room mode now uses the existing `script.js` draw pipeline instead of a second Ro
 renderer. The Room adapter internally prepares a valid ten-player snapshot when needed,
 maps Room members to the existing Player Model, runs the existing balancing/reveal/audio
 flow, and persists the resulting teams through the version-checked HUY-11 lineup RPC.
+Persisted 5v5 teams are restored into the shared result area after reload/reconnect. That
+presentation is cleared immediately on logout, account change, or a newly prepared lineup,
+so names from the previous authenticated Room cannot remain visible.
 The Phase 1 player list is replaced only inside the Room sidebar; `state.players`,
 `localStorage.lq_state`, Firebase Live Share, and Quick Randomizer history remain separate.
 
 Host Tier/Rank edits are draft-only while the Room is waiting. They are scoped by Room and
-round, cleared on account/Room/round changes, and are not presented as synchronized until
-the draw persists the lineup. Result cards and slot rows support Room swap selection with
+the upcoming round, survive the internal Prepare transition, clear on account/Room/round
+changes, and are not presented as synchronized until the draw persists the lineup. Result cards and slot rows support Room swap selection with
 drag/drop plus keyboard activation; the server RPC remains authoritative and rejects swaps
 outside the preparing state.
 
@@ -78,18 +81,19 @@ only be justified by a verified backend gap.
 
 ## Verification limits / dependencies
 
-Local validation on 2026-11-04: `node --test tests/*.test.js` — 113 passed, 0 failed.
+Local validation on 2026-11-14: `node --test tests/*.test.js` — 117 passed, 0 failed.
 JavaScript syntax and `git diff --check` passed. Chrome fake-service smoke passed with
-actual viewports 1264px and 500px under `/customAOV/`. This is not a live multi-client
-Supabase test or a physical mobile device test. SQL checks are static; the new migration
-has not been executed on PostgreSQL in this environment.
+Host and Viewer clients sharing Realtime-style updates at actual viewports 1264px and
+500px under `/customAOV/`; it covers cross-client swap visibility, Host-control isolation,
+horizontal overflow and logout cleanup. This is not a live multi-account Supabase test or
+a physical mobile device test. SQL checks are static; migrations were not executed on
+PostgreSQL in this environment.
 
 Node tests use fake services/DOM; they do not prove RLS, SQL execution or live Realtime delivery.
-`node tests/room-browser-smoke.mjs` is intended to use local Chrome and a fake API at
-`/customAOV/`, checking Tier generation/save, swap, narrow/wide layout and logout. In the
-latest run Chrome did not return a DOM result, so browser smoke is NOT VERIFIED; it never
-contacts Supabase or Firebase. Browser profiles remain in the OS temporary directory; no
-data cleanup DELETE.
+`node tests/room-browser-smoke.mjs` uses local Chrome and a fake API at `/customAOV/`,
+checking two client views, Tier controls, swap propagation, narrow/wide layout and logout.
+It never contacts Supabase or Firebase. Browser profiles remain in the OS temporary
+directory; no data cleanup DELETE.
 HUY-9/HUY-10 concurrent Next Round and 11+ account load tests remain NOT VERIFIED.
 Existing Leave/Continue RPCs need live concurrency review: they do not share the Room-first
 lock ordering of Join. Existing host-only Kick does not check closed Room state. These applied

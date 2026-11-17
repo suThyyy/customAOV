@@ -21,7 +21,7 @@ function setup(user='host') {
  queue:[{member_id:'manual',queue_seq:7,status:'waiting'},{member_id:'m',queue_seq:2,status:'waiting'}],currentPlayers:[]};
  const api={readSnapshot:async()=>({data}),hostAddPlayer:async(...args)=>{calls.push(args);return{error:{message:'Host only'}};},createRoom:async()=>({data:data.room})};
  const channel={on(){return this;},subscribe(){return this;}};
- const ui=createRoomUI({root,api,client:{channel:()=>channel,removeChannel:()=>{}},core:{},rankCatalog:[],tierCatalog:[{id:'1',label:'Mâm 1',score:8}],href:'https://site/customAOV/?room=r&invite=code',setUrl:()=>{},login:()=>calls.push('login'),confirm:()=>true});
+ const ui=createRoomUI({root,api,client:{channel:()=>channel,removeChannel:()=>{}},core:{},rankCatalog:[],tierCatalog:[],href:'https://site/customAOV/?room=r&invite=code',setUrl:()=>{},login:()=>calls.push('login'),confirm:()=>true});
  ui.setAuthState({user:user?{id:user}:null});
  const button=text=>root.querySelectorAll('button').find(b=>b.textContent===text);
  return{ui,root,calls,button,api,getData:()=>data,setData:d=>data=d};
@@ -72,33 +72,6 @@ test('Prepare is internal to Draw and waiting rows expose draft Tier/Rank contro
   for(let i=2;i<10;i++){d.members.push({id:String(i),status:'active'});d.queue.push({member_id:String(i),status:'waiting',queue_seq:i+10});}
   f.setData(d);await f.ui.controller.refresh();assert.ok(f.root.querySelectorAll('select').length>0);
   assert.equal(f.ui.controller.getState().data.currentPlayers.length,0);
- }finally{f.ui.destroy();}
-});
-
-test('waiting Tier drafts survive the round increment performed by Prepare',async()=>{
- const f=setup();try{
-  await tick();const d=structuredClone(f.ui.controller.getState().data);
-  d.room.current_round_no=1;d.room.current_round_state='ended';d.currentPlayers=[];
-  d.queue=[];d.members=[];
-  for(let i=0;i<10;i++){
-   d.members.push({id:String(i),display_name:`Player ${i}`,status:'active',user_id:null});
-   d.queue.push({member_id:String(i),status:'waiting',queue_seq:i+1});
-  }
-  f.setData(d);await f.ui.controller.refresh();f.ui.setSkillMode('tier');
-  const skillSelects=f.root.querySelectorAll('select').filter(x=>x.parentElement?.className==='room-skill-control');
-  assert.equal(skillSelects.length,10);
-  for(const select of skillSelects){
-   select.value='1';select.handlers.change();
-  }
-  f.api.prepareNextRound=async()=>{
-   d.room.current_round_no=2;d.room.current_round_state='preparing';
-   d.currentPlayers=d.queue.map((q,i)=>({member_id:q.member_id,slot:i+1,team:null,skill_mode:null,skill_value:null,skill_score:null}));
-   d.queue.forEach(q=>{q.status='selected';});
-   return {data:d.room};
-  };
-  assert.equal(await f.ui.prepareForDraw(),true);
-  assert.equal(f.ui.getSelectedPlayers().length,10);
-  assert.ok(f.ui.getSelectedPlayers().every(p=>p.skill_mode==='tier'&&p.skill_value==='1'&&p.skill_score===8));
  }finally{f.ui.destroy();}
 });
 

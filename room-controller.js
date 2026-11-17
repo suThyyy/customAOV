@@ -16,65 +16,6 @@ export function selectedPlayers(snapshot) {
     }));
 }
 
-export function roomResultFromSnapshot(snapshot) {
-    if (!snapshot?.room) return null;
-    const players = selectedPlayers(snapshot);
-    const teamA = players.filter(player => player.team === 'a');
-    const teamB = players.filter(player => player.team === 'b');
-    if (teamA.length !== 5 || teamB.length !== 5) return null;
-
-    const displayPlayer = player => ({...player, avatar:'', role:'flex', champion:null});
-    const score = team => team.reduce((total, player) => {
-        const value = Number(player.skill_score);
-        return Number.isFinite(value) ? total + value : total;
-    }, 0);
-    const scoreA = score(teamA), scoreB = score(teamB), total = scoreA + scoreB;
-    const balance = total > 0 ? {
-        teamA: Math.round((scoreA / total) * 100),
-        teamB: Math.round((scoreB / total) * 100)
-    } : {};
-
-    return {
-        roomId: snapshot.room.id,
-        roundNo: snapshot.room.current_round_no,
-        roomState: snapshot.room.current_round_state,
-        roomStatus: snapshot.room.status,
-        teamA: teamA.map(displayPlayer),
-        teamB: teamB.map(displayPlayer),
-        nameA: 'Đội A',
-        nameB: 'Đội B',
-        balance,
-        warning: null,
-        balanceMode: players[0]?.skill_mode || 'random',
-        persisted: true
-    };
-}
-
-export function sameRoomLineup(first, second) {
-    if (!first || !second || first.roomId !== second.roomId) return false;
-    const signature = result => ['a','b'].flatMap(team =>
-        (team === 'a' ? result.teamA : result.teamB)
-            .map(player => `${team}:${player.id}`)
-            .sort()
-    ).join('|');
-    return signature(first) === signature(second);
-}
-
-export function reconcileRoomResult(roomState, currentResult) {
-    if (!roomState?.user || !roomState.data) return {action:'clear', result:null};
-    const restored = roomResultFromSnapshot(roomState.data);
-    if (!restored) {
-        return currentResult?.roomId === roomState.data.room.id
-            ? {action:'clear', result:null}
-            : {action:'keep', result:currentResult};
-    }
-    if (!sameRoomLineup(currentResult, restored)) return {action:'replace', result:restored};
-    if (currentResult.roomState !== restored.roomState || currentResult.roomStatus !== restored.roomStatus) {
-        return {action:'refresh', result:{...currentResult, roomState:restored.roomState, roomStatus:restored.roomStatus}};
-    }
-    return {action:'keep', result:currentResult};
-}
-
 export function generateLineup(core, players, mode, catalog, assignments) {
     if (players.length !== 10) throw new Error('Cần đủ 10 người được chọn.');
     const mapped = players.map(p => {

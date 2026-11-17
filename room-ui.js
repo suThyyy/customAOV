@@ -62,9 +62,7 @@ export function createRoomUI({root, api, client, rankCatalog, tierCatalog, onSta
         for(const b of root.querySelectorAll('button'))b.disabled=state.busy;
         if(!state.data){heading.textContent='Open Match Room';lastData=null;draftScope=null;draftSkills.clear();waiting.replaceChildren();selected.replaceChildren();members.replaceChildren();return;}
         const d=state.data,r=d.room,host=r.host_user_id===state.user?.id,open=r.status==='open',preparing=r.current_round_state==='preparing';
-        const draftRound=['idle','ended'].includes(r.current_round_state)
-            ? Number(r.current_round_no)+1 : Number(r.current_round_no);
-        const nextDraftScope=`${r.id}:${draftRound}`;
+        const nextDraftScope=`${r.id}:${r.current_round_no}`;
         if(draftScope!==null&&draftScope!==nextDraftScope)draftSkills.clear();
         draftScope=nextDraftScope;
         heading.textContent=`Room · Lượt ${r.current_round_no} · ${r.status} / ${r.current_round_state}`;invite.value=r.invite_code;
@@ -95,7 +93,6 @@ export function createRoomUI({root, api, client, rankCatalog, tierCatalog, onSta
         getSelectedCount:()=>{const d=controller.getState().data;return d?d.currentPlayers.length:0;},
         getWaitingCount:()=>{const d=controller.getState().data;return d?d.queue.filter(q=>q.status==='waiting'&&d.members.some(m=>m.id===q.member_id&&m.status==='active')).length:0;},
         getRoundState:()=>controller.getState().data?.room.current_round_state||null,
-        canSwap:()=>{const s=controller.getState(),r=s.data?.room,players=s.data?.currentPlayers||[];return Boolean(s.user&&r&&r.host_user_id===s.user.id&&r.status==='open'&&r.current_round_state==='preparing'&&players.length===10&&players.every(p=>p.team==='a'||p.team==='b'));},
         prepareForDraw:async()=>{const s=controller.getState();if(!s.data)return false;if(['idle','ended'].includes(s.data.room.current_round_state))return Boolean(await controller.run('prepareNextRound',s.roomId));return s.data.room.current_round_state==='preparing';},
         persistDrawResult:result=>{const s=controller.getState();if(!s.data)return false;const teams=new Map([...result.teamA.map(p=>[p.id,'a']),...result.teamB.map(p=>[p.id,'b'])]);const random=result.balanceMode==='random';return controller.run('saveLineup',s.roomId,s.data.room.version,currentWithDraft(s.data).map(p=>({...p,team:teams.get(p.id)||p.team,skill_mode:random?'random':p.skill_mode,skill_value:random?null:p.skill_value,skill_score:random?null:p.skill_score})));},
         swapRoomPlayers:(a,b)=>{const s=controller.getState();if(!s.data||s.data.room.current_round_state!=='preparing')return false;return controller.run('saveLineup',s.roomId,s.data.room.version,swapLineup(currentWithDraft(s.data),a,b));},

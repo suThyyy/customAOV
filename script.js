@@ -1,7 +1,6 @@
 import { setupOtpAuth } from './auth-ui.js';
 import { createAuthIntegration } from './auth-integration.js';
 import { createRoomUI } from './room-ui.js';
-import { reconcileRoomResult } from './room-controller.js';
 import { roomApi } from './roomApi.js';
 import { supabase } from './supabaseAuth.js';
 // ============================================================
@@ -1070,7 +1069,6 @@ let activeRole = 'top';
 let pendingAvatar = null;      // ảnh đang preview trước khi Thêm
 let editingAvatarId = null;    // id player đang đổi ảnh
 let currentResult = null;      // kết quả đang hiển thị (để copy/lật hết)
-let latestRoomState = null;
 
 function setRailOpen(open) {
     document.body.classList.toggle('rail-open', open);
@@ -1534,11 +1532,7 @@ async function doDraw(players, isRoomDraw=false) {
         balance.teamB = Math.round((pB / tot) * 100);
     }
 
-    currentResult = {
-        teamA, teamB, nameA, nameB, balance, warning: split.warning, balanceMode: s.teamMode,
-        roomId: isRoomDraw ? roomUI?.controller.getState().roomId : null,
-        roomState: isRoomDraw ? roomUI?.getRoundState() : null
-    };
+    currentResult = { teamA, teamB, nameA, nameB, balance, warning: split.warning, balanceMode: s.teamMode };
 
     if (isRoomDraw) {
         const persisted = await roomUI.persistDrawResult(currentResult);
@@ -1580,9 +1574,8 @@ function renderSecretBox() {
 }
 
 function teamColumnSecretBox(team, name, percent, side) {
-    const canSwap = Boolean(roomUI?.canSwap());
     const cards = team.map((p) => `
-        <div class="flip-card" data-side="${side}" data-idx="${team.indexOf(p)}" data-room-member-id="${roomUI?.isActive() ? escapeHtml(p.id || '') : ''}" draggable="${canSwap ? 'true' : 'false'}" tabindex="${canSwap ? '0' : '-1'}" aria-label="${canSwap ? `Chọn để đổi ${escapeHtml(p.name)}` : ''}">
+        <div class="flip-card" data-side="${side}" data-idx="${team.indexOf(p)}" data-room-member-id="${roomUI?.isActive() ? escapeHtml(p.id || '') : ''}" draggable="${roomUI?.isActive() ? 'true' : 'false'}" tabindex="${roomUI?.isActive() ? '0' : '-1'}" aria-label="${roomUI?.isActive() ? `Chọn để đổi ${escapeHtml(p.name)}` : ''}">
             <div class="card-left">
                 <span class="f-avatar">${avatarHtml(p.avatar)}</span>
             </div>
@@ -1703,8 +1696,8 @@ function renderSlotMachine() {
         if (appended.has(p)) return;
         appended.add(p);
         const row = document.createElement('div');
-        row.className = `sr-row is-arriving${roomUI?.canSwap() ? ' room-swap-card' : ''}`;
-        if (roomUI?.canSwap() && p.id) {
+        row.className = `sr-row is-arriving${roomUI?.isActive() ? ' room-swap-card' : ''}`;
+        if (roomUI?.isActive() && p.id) {
             row.dataset.roomMemberId = p.id;
             row.draggable = true;
             row.tabIndex = 0;
@@ -2119,13 +2112,8 @@ redrawBtn.addEventListener('click', () => {
 
 let roomSwapSelection=null;
 async function applyRoomSwap(firstId, secondId) {
-    const sideOf = (result, memberId) => result?.teamA.some(p => String(p.id) === String(memberId)) ? 'a'
-        : result?.teamB.some(p => String(p.id) === String(memberId)) ? 'b' : null;
-    const initialFirstSide = sideOf(currentResult, firstId);
     const response = await roomUI?.swapRoomPlayers(firstId, secondId);
     if (!response || !currentResult) return;
-    // Realtime/refetch may already have reconciled the authoritative swap.
-    if (initialFirstSide && sideOf(currentResult, firstId) !== initialFirstSide) return;
     let firstTeam = currentResult.teamA.findIndex(p => String(p.id) === String(firstId));
     let secondTeam = currentResult.teamB.findIndex(p => String(p.id) === String(secondId));
     let firstSide = 'a';
@@ -2158,15 +2146,15 @@ async function applyRoomSwap(firstId, secondId) {
     });
 }
 resultArea.addEventListener('dragstart', (e) => {
-    if (!roomUI?.canSwap()) return;
+    if (!roomUI?.isActive()) return;
     const card=e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
     if (card) e.dataTransfer?.setData('text/plain',card.dataset.roomMemberId);
 });
 resultArea.addEventListener('dragover', (e) => {
-    if (roomUI?.canSwap() && e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) e.preventDefault();
+    if (roomUI?.isActive() && e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) e.preventDefault();
 });
 resultArea.addEventListener('drop', (e) => {
-    if (!roomUI?.canSwap()) return;
+    if (!roomUI?.isActive()) return;
     const targetCard=e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
     const first=e.dataTransfer?.getData('text/plain');
     if (targetCard && first && first!==targetCard.dataset.roomMemberId) {
@@ -2204,7 +2192,7 @@ resultArea.addEventListener('click', (e) => {
         if (isHost && currentSessionId) {
             syncAllReveals(allReveals);
         }
-    } else if (roomUI?.canSwap() && e.target.closest('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) {
+    } else if (roomUI?.isActive() && e.target.closest('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]')) {
         const card=e.target.closest('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
         if (!roomSwapSelection) {
             roomSwapSelection=card.dataset.roomMemberId;
@@ -2243,7 +2231,7 @@ resultArea.addEventListener('click', (e) => {
 });
 
 resultArea.addEventListener('keydown', (e) => {
-    if (!roomUI?.canSwap() || !['Enter', ' '].includes(e.key)) return;
+    if (!roomUI?.isActive() || !['Enter', ' '].includes(e.key)) return;
     const card = e.target.closest?.('.flip-card[data-room-member-id], .room-swap-card[data-room-member-id]');
     if (!card) return;
     e.preventDefault();
@@ -2415,32 +2403,12 @@ async function updateAuthUI() {
     renderIntegratedAuthState({ user, profiles: null });
 }
 
-function clearRoomPresentation() {
-    currentResult = null;
-    roomSwapSelection = null;
-    resultArea.replaceChildren();
-    resultArea.hidden = true;
-}
-
-function syncRoomPresentation(roomState, forceActive=false) {
-    latestRoomState = roomState;
-    if (!(forceActive || roomUI?.isActive())) return;
-    const reconciliation = reconcileRoomResult(roomState, currentResult);
-    if (reconciliation.action === 'keep') return;
-    if (reconciliation.action === 'clear') {
-        clearRoomPresentation();
-        return;
-    }
-    currentResult = reconciliation.result;
-    renderSecretBox();
-}
-
 function initAuth() {
     const roomArea = $('openRoomArea');
     if (roomArea) {
         roomUI = createRoomUI({root:roomArea,api:roomApi,client:supabase,core:globalThis.CustomAOVRandomizer,
             rankCatalog:RANK_CATALOG,tierCatalog:Object.entries(DEFAULT_TIER_SCORE).map(([id,score])=>({id,label:TIER_LABELS[id],score})),
-            onStateChange:roomState=>{syncRoomPresentation(roomState);updateDrawStatus();},
+            onStateChange:()=>updateDrawStatus(),
             onStart:async()=>{
                 if (currentResult && !(await roomUI.persistDrawResult(currentResult))) return;
                 await roomUI.startRound();
@@ -2463,8 +2431,9 @@ function initAuth() {
             roomBtn.setAttribute('aria-expanded',String(active));
             roomUI.setMode(active);
             updateDrawStatus();
-            clearRoomPresentation();
-            if(active)syncRoomPresentation(latestRoomState,true);
+            currentResult=null;
+            resultArea.replaceChildren();
+            resultArea.hidden=true;
         };
         if (new URL(location.href).searchParams.has('room')) setRoomMode(true);
         roomBtn.addEventListener('click',()=>{

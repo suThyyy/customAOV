@@ -6,33 +6,27 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawn} from 'node:child_process';
 const chrome=process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const page=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/room.css"><main><section id="hostRoomArea"></section><section id="viewerRoomArea"></section></main><pre id="result">RUNNING</pre><script src="randomizer-core.js"></script><script type="module">
+const page=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/room.css"><section id="openRoomArea"></section><pre id="result">RUNNING</pre><script src="randomizer-core.js"></script><script type="module">
 import {createRoomUI} from './room-ui.js';
 const out=document.querySelector('#result');
 const assert=(v,m)=>{if(!v)throw Error(m)};
 const wait=()=>new Promise(r=>setTimeout(r,30));
-const clients=[];let hostUI,viewerUI;
+let ui;
 try {
  const data={room:{id:'r',host_user_id:'host',invite_code:'test-code',status:'open',current_round_no:1,current_round_state:'preparing',version:1},members:[],queue:[],currentPlayers:[]};
- for(let i=0;i<10;i++){data.members.push({id:String(i),display_name:'Player '+i,status:'active',user_id:i===0?'viewer':null});data.currentPlayers.push({member_id:String(i),slot:i+1,team:i<5?'a':'b',skill_mode:'tier',skill_value:'1',skill_score:8});}
+ for(let i=0;i<10;i++){data.members.push({id:String(i),display_name:'Player '+i,status:'active',user_id:null});data.currentPlayers.push({member_id:String(i),slot:i+1,team:i<5?'a':'b',skill_mode:'tier',skill_value:'1',skill_score:8});}
  let saved=0;
- const emit=()=>{for(const changed of new Set(clients.flatMap(client=>client.listeners)))changed();};
- const api={readSnapshot:async()=>({data:structuredClone(data)}),saveLineup:async(r,v,players)=>{assert(players.length===10,'ten players');saved++;data.currentPlayers=structuredClone(players);data.room.version++;emit();return {data:data.room}}};
- const makeClient=()=>{const client={listeners:[],channel(){const channel={on(_kind,_filter,changed){client.listeners.push(changed);return channel},subscribe(status){status('SUBSCRIBED');return channel}};return channel},removeChannel(){client.listeners=[]}};clients.push(client);return client;};
- const options=root=>({root,api,client:makeClient(),core:globalThis.CustomAOVRandomizer,tierCatalog:[{id:'1',label:'Mâm 1',score:8}],rankCatalog:[],href:location.href+'?room=r',setUrl(){},login(){},confirm:()=>true});
- hostUI=createRoomUI(options(document.querySelector('#hostRoomArea')));viewerUI=createRoomUI(options(document.querySelector('#viewerRoomArea')));
- hostUI.setAuthState({user:{id:'host'}});viewerUI.setAuthState({user:{id:'viewer'}});await wait();
- assert(document.querySelectorAll('#hostRoomArea .room-skill-control select').length===10,'host skill selectors');
- assert(document.querySelector('#viewerRoomArea [aria-label="Host Add Player"]').parentElement.hidden,'viewer host controls');
- assert(hostUI.canSwap()&&!viewerUI.canSwap(),'host-only swap affordance');
- await hostUI.swapRoomPlayers('0','5');await wait();assert(saved===1,'swap save');
+ const api={readSnapshot:async()=>({data:structuredClone(data)}),saveLineup:async(r,v,players)=>{assert(players.length===10,'ten players');saved++;data.currentPlayers=players;data.room.version++;return {data:data.room}}};
+ const channel={on(){return this},subscribe(){return this}};
+ ui=createRoomUI({root:document.querySelector('#openRoomArea'),api,client:{channel:()=>channel,removeChannel(){}},core:globalThis.CustomAOVRandomizer,tierCatalog:[{id:'1',label:'Mâm 1',score:8}],rankCatalog:[],href:location.href+'?room=r',setUrl(){},login(){},confirm:()=>true});
+ ui.controller.open('r');ui.setAuthState({user:{id:'host'}});await wait();
+ assert(document.querySelectorAll('.room-skill-control select').length===10,'skill selectors');
+ await ui.swapRoomPlayers('0','5');await wait();assert(saved===1,'swap save');
  assert(data.currentPlayers.filter(p=>p.team==='a').length===5,'5v5');
- assert(viewerUI.controller.getState().data.currentPlayers.find(p=>p.member_id==='0').team==='b','viewer realtime swap');
  assert(document.documentElement.scrollWidth<=innerWidth,'horizontal overflow');
- viewerUI.setAuthState({user:null});assert(!document.querySelector('#viewerRoomArea').textContent.includes('Player 0'),'viewer logout cleanup');
- hostUI.setAuthState({user:null});assert(!document.querySelector('#hostRoomArea').textContent.includes('Player 0'),'host logout cleanup');
+ ui.setAuthState({user:null});assert(!document.querySelector('#openRoomArea').textContent.includes('Player 0'),'logout cleanup');
  out.textContent='BROWSER_PASS width='+innerWidth;
-}catch(e){out.textContent='BROWSER_FAIL '+e.message}finally{hostUI?.destroy();viewerUI?.destroy()}
+}catch(e){out.textContent='BROWSER_FAIL '+e.message}finally{ui?.destroy()}
 </script>`;
 const allowed=new Map(['room-ui.js','room-controller.js','randomizer-core.js','css/style.css','css/room.css'].map(p=>['/customAOV/'+p,p]));
 const server=createServer(async(req,res)=>{

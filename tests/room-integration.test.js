@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRoomController,inviteLink,generateLineup,selectedPlayers,swapLineup,subscribeRoom,roomResultFromSnapshot,sameRoomLineup,reconcileRoomResult} from '../room-controller.js';
+import {createRoomController,inviteLink,generateLineup,selectedPlayers,swapLineup,subscribeRoom} from '../room-controller.js';
 import {createRoomApi} from '../room-api-core.js';
 import '../randomizer-core.js';
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -57,24 +57,6 @@ test('Room mapping and Tier/Rank generation reuse Core and preserve source data'
  assert.equal(JSON.stringify(d),before);
  assert.throws(()=>generateLineup(globalThis.CustomAOVRandomizer,players.slice(1),'tier',[],{}),/10/);
  assert.throws(()=>generateLineup(globalThis.CustomAOVRandomizer,players,'tier',[],assign),/Tier/);
-});
-test('persisted Room teams restore after reload and clear on logout or a new unprepared round',()=>{
- const data={room:{id:'r',current_round_no:2},members:[],queue:[],currentPlayers:[]};
- for(let i=0;i<10;i++){
-  data.members.push({id:String(i),display_name:`Player ${i}`});
-  data.currentPlayers.push({member_id:String(i),slot:i+1,team:i<5?'a':'b',skill_mode:'tier',skill_value:'1',skill_score:8});
- }
- const restored=roomResultFromSnapshot(data);
- assert.equal(restored.teamA.length,5);assert.equal(restored.teamB.length,5);
- assert.equal(restored.teamA[0].name,'Player 0');assert.deepEqual(restored.balance,{teamA:50,teamB:50});
- assert.equal(reconcileRoomResult({user:{id:'host'},data},null).action,'replace');
- assert.equal(reconcileRoomResult({user:null,data:null},restored).action,'clear');
- const active=structuredClone(data);active.room.current_round_state='active';
- assert.equal(reconcileRoomResult({user:{id:'host'},data:active},restored).action,'refresh');
- const nextRound=structuredClone(data);nextRound.room.current_round_no=3;nextRound.currentPlayers.forEach(p=>{p.team=null;});
- assert.equal(reconcileRoomResult({user:{id:'host'},data:nextRound},restored).action,'clear');
- const reordered={...restored,teamA:[...restored.teamA].reverse(),teamB:[...restored.teamB].reverse()};
- assert.equal(sameRoomLineup(restored,reordered),true);
 });
 test('lineup API whitelists fields and forwards version/replace contract',async()=>{
  const calls=[];const api=createRoomApi({getCurrentUser:async()=>({id:'a'}),client:{rpc:async(name,args)=>{calls.push({name,args});return{data:{}};}}});
